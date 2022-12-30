@@ -121,10 +121,11 @@ public final class StackerUtils {
     /**
      * Drops experience at a given location
      *
-     * @param location to spawn experience
+     * @param location   to spawn experience
      * @param lowerBound minimum amount to drop
      * @param upperBound maximum amount to drop
-     * @param step the max size an orb can be, will drop multiple orbs if this is exceeded
+     * @param step       the max size an orb can be, will drop multiple orbs if this
+     *                   is exceeded
      */
     public static void dropExperience(Location location, int lowerBound, int upperBound, int step) {
         World world = location.getWorld();
@@ -135,25 +136,29 @@ public final class StackerUtils {
 
         int chunkAmount = Math.max(2, step); // Prevent infinite loops and always use at minimum a step of 2
         while (experience > chunkAmount) {
-            world.spawn(location.clone().add(RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5), ExperienceOrb.class, x -> x.setExperience(chunkAmount));
+            world.spawn(location.clone().add(RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5,
+                    RANDOM.nextDouble() - 0.5), ExperienceOrb.class, x -> x.setExperience(chunkAmount));
             experience -= chunkAmount;
         }
 
         if (experience > 0) {
             int fExperience = experience;
-            world.spawn(location.clone().add(RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5), ExperienceOrb.class, x -> x.setExperience(fExperience));
+            world.spawn(location.clone().add(RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5,
+                    RANDOM.nextDouble() - 0.5), ExperienceOrb.class, x -> x.setExperience(fExperience));
         }
     }
 
     /**
-     * @return a stream of all block materials that can be considered to be used for stacked blocks
+     * @return a stream of all block materials that can be considered to be used for
+     *         stacked blocks
      */
     public static List<Material> getPossibleStackableBlockMaterials() {
         Inventory inventory = Bukkit.createInventory(null, 9);
         return Arrays.stream(Material.values())
                 .filter(Material::isBlock)
                 .filter(Material::isSolid)
-                .filter(x -> !x.isInteractable() || x == Material.TNT || x == Material.BEACON || x.name().endsWith("REDSTONE_ORE"))
+                .filter(x -> !x.isInteractable() || x == Material.TNT || x == Material.BEACON
+                        || x.name().endsWith("REDSTONE_ORE"))
                 .filter(x -> !x.hasGravity())
                 .filter(x -> !Tag.CORAL_PLANTS.isTagged(x))
                 .filter(x -> !Tag.SLABS.isTagged(x))
@@ -161,9 +166,9 @@ public final class StackerUtils {
                 .filter(x -> !x.name().endsWith("_WALL")) // Tags for these don't exist in older versions
                 .filter(x -> !x.name().endsWith("_PRESSURE_PLATE"))
                 .filter(x -> {
-            inventory.setItem(0, new ItemStack(x));
-            return inventory.getItem(0) != null && x != Material.SPAWNER;
-        }).sorted(Comparator.comparing(Enum::name)).toList();
+                    inventory.setItem(0, new ItemStack(x));
+                    return inventory.getItem(0) != null && x != Material.SPAWNER;
+                }).sorted(Comparator.comparing(Enum::name)).toList();
     }
 
     /**
@@ -179,11 +184,15 @@ public final class StackerUtils {
                 || material.name().endsWith("SLAB")
                 || material.name().endsWith("WALL"))
             return true;
-
-        return switch (material) {
-            case CHEST, ENDER_CHEST, TRAPPED_CHEST, ICE -> true;
-            default -> material.isOccluding();
-        };
+        try {
+            return switch (material) {
+                case CHEST, ENDER_CHEST, TRAPPED_CHEST, ICE -> true;
+                default -> material.isOccluding();
+            };
+        } catch (Throwable t) {
+            // TEMP FIX FOR MAGMA FOUNDATION SERVERS
+            return true;
+        }
     }
 
     /**
@@ -193,10 +202,16 @@ public final class StackerUtils {
      * @return true if the Material is a type of air
      */
     public static boolean isAir(Material material) {
-        return switch (material) {
-            case AIR, CAVE_AIR, VOID_AIR -> true;
-            default -> false;
-        };
+        try {
+            return switch (material) {
+                case AIR, CAVE_AIR, VOID_AIR -> true;
+                default -> false;
+            };
+        } catch (Throwable t) {
+            // TEMP FIX FOR MAGMA FOUNDATION SERVERS
+            return material.name().contains("AIR");
+        }
+
     }
 
     /**
@@ -222,13 +237,16 @@ public final class StackerUtils {
     }
 
     /**
-     * Gets an integer value from a Permissible's permissions, picking the highest value out of the ones available.
-     * The lowerbound will be the lowest the value can possibly be. To use, pass in a permission such as
-     * "example.permission" and the integer value will be located at "example.permission.<#>"
+     * Gets an integer value from a Permissible's permissions, picking the highest
+     * value out of the ones available.
+     * The lowerbound will be the lowest the value can possibly be. To use, pass in
+     * a permission such as
+     * "example.permission" and the integer value will be located at
+     * "example.permission.<#>"
      *
      * @param permissible The Permissible
-     * @param permission The permission prefix
-     * @param lowerBound The lowerbound of the value
+     * @param permission  The permission prefix
+     * @param lowerBound  The lowerbound of the value
      * @return the highest value found within the Permissible's permissions
      */
     public static int getPermissionDefinableValue(Permissible permissible, String permission, int lowerBound) {
@@ -238,7 +256,8 @@ public final class StackerUtils {
             if (target.startsWith(permission) && info.getValue()) {
                 try {
                     amount = Math.max(amount, Integer.parseInt(target.substring(target.lastIndexOf('.') + 1)));
-                } catch (NumberFormatException ignored) { }
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
         return amount;
@@ -250,7 +269,8 @@ public final class StackerUtils {
         EntityUtils.clearCache();
         ItemUtils.clearCache();
 
-        String separator = RoseStacker.getInstance().getManager(LocaleManager.class).getLocaleMessage("number-separator");
+        String separator = RoseStacker.getInstance().getManager(LocaleManager.class)
+                .getLocaleMessage("number-separator");
         DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
         symbols.setGroupingSeparator(!separator.isEmpty() ? separator.charAt(0) : ',');
         formatter = new DecimalFormat("#,##0", symbols);
@@ -265,8 +285,10 @@ public final class StackerUtils {
     }
 
     public static double getSilkTouchChanceRaw(Player player) {
-        double chance = StackerUtils.getPermissionDefinableValue(player, "rosestacker.silktouch.chance", ConfigurationManager.Setting.SPAWNER_SILK_TOUCH_CHANCE.getInt());
-        chance += ConfigurationManager.Setting.SPAWNER_SILK_TOUCH_LUCK_CHANCE_INCREASE.getInt() * StackerUtils.getLuckLevel(player);
+        double chance = StackerUtils.getPermissionDefinableValue(player, "rosestacker.silktouch.chance",
+                ConfigurationManager.Setting.SPAWNER_SILK_TOUCH_CHANCE.getInt());
+        chance += ConfigurationManager.Setting.SPAWNER_SILK_TOUCH_LUCK_CHANCE_INCREASE.getInt()
+                * StackerUtils.getLuckLevel(player);
         return chance;
     }
 

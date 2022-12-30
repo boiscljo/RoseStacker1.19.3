@@ -7,6 +7,8 @@ import dev.rosewood.rosestacker.nms.util.ExtraUtils;
 import dev.rosewood.rosestacker.spawner.spawning.MobSpawningMethod;
 import dev.rosewood.rosestacker.stack.StackedSpawner;
 import dev.rosewood.rosestacker.stack.settings.SpawnerStackSettings;
+
+import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.Random;
 import net.minecraft.core.BlockPos;
@@ -24,6 +26,8 @@ import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.EntityType;
 import org.bukkit.persistence.PersistentDataContainer;
+
+import com.google.common.base.Throwables;
 
 public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawnerTile {
 
@@ -47,7 +51,8 @@ public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawne
     @Override
     public void serverTick(ServerLevel level, BlockPos blockPos) {
         // Only tick the spawner if a player is nearby
-        this.playersTimeSinceLastCheck = (this.playersTimeSinceLastCheck + 1) % Setting.SPAWNER_PLAYER_CHECK_FREQUENCY.getInt();
+        this.playersTimeSinceLastCheck = (this.playersTimeSinceLastCheck + 1)
+                % Setting.SPAWNER_PLAYER_CHECK_FREQUENCY.getInt();
         if (this.playersTimeSinceLastCheck == 0)
             this.playersNearby = this.isNearPlayer(level, blockPos);
 
@@ -79,7 +84,8 @@ public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawne
                     return;
             }
 
-            this.redstoneTimeSinceLastCheck = (this.redstoneTimeSinceLastCheck + 1) % Setting.SPAWNER_POWERED_CHECK_FREQUENCY.getInt();
+            this.redstoneTimeSinceLastCheck = (this.redstoneTimeSinceLastCheck + 1)
+                    % Setting.SPAWNER_POWERED_CHECK_FREQUENCY.getInt();
         }
 
         // Count down spawn timer unless we are ready to spawn
@@ -96,7 +102,12 @@ public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawne
         this.trySpawns(false);
 
         // Randomize spawn potentials
-        this.spawnPotentials.getRandom(level.getRandom()).map(WeightedEntry.Wrapper::getData).ifPresent(x -> this.nextSpawnData = x);
+        try {
+            this.spawnPotentials.getRandom(level.getRandom()).map(WeightedEntry.Wrapper::getData)
+                    .ifPresent(x -> this.nextSpawnData = x);
+        } catch (Throwable t) {
+
+        }
     }
 
     private void trySpawns(boolean onlyCheckConditions) {
@@ -118,7 +129,8 @@ public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawne
         Level level = this.blockEntity.getLevel();
         if (level != null) {
             level.blockEntityChanged(this.blockPos);
-            level.sendBlockUpdated(this.blockPos, this.blockEntity.getBlockState(), this.blockEntity.getBlockState(), 3);
+            level.sendBlockUpdated(this.blockPos, this.blockEntity.getBlockState(), this.blockEntity.getBlockState(),
+                    3);
         }
     }
 
@@ -139,12 +151,30 @@ public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawne
     private boolean isNearPlayer(Level level, BlockPos blockPos) {
         if (this.stackedSpawner.getStackSettings().hasUnlimitedPlayerActivationRange())
             return true;
-        return level.hasNearbyAlivePlayer((double) blockPos.getX() + 0.5D, (double) blockPos.getY() + 0.5D, (double) blockPos.getZ() + 0.5D, Math.max(this.stackedSpawner.getStackSettings().getPlayerActivationRange(), 0.1));
+        return level.hasNearbyAlivePlayer((double) blockPos.getX() + 0.5D, (double) blockPos.getY() + 0.5D,
+                (double) blockPos.getZ() + 0.5D,
+                Math.max(this.stackedSpawner.getStackSettings().getPlayerActivationRange(), 0.1));
+    }
+
+    private void setAccessible(String name) throws Exception {
+        Field f = BaseSpawner.class.getField(name);
+        if (f != null)
+            f.setAccessible(true);
     }
 
     private void loadOld(BaseSpawner baseSpawner) {
         this.spawnDelay = baseSpawner.spawnDelay;
-        this.spawnPotentials = baseSpawner.spawnPotentials;
+        try {
+            this.spawnPotentials = baseSpawner.spawnPotentials;
+        } catch (Throwable t) {
+            try {
+                setAccessible("spawnPotentials");
+                setAccessible("f_45443_");
+                this.spawnPotentials = baseSpawner.spawnPotentials;
+            } catch (Throwable t2) {
+
+            }
+        }
         this.nextSpawnData = baseSpawner.nextSpawnData;
         this.minSpawnDelay = baseSpawner.minSpawnDelay;
         this.maxSpawnDelay = baseSpawner.maxSpawnDelay;
@@ -157,24 +187,32 @@ public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawne
 
     @Override
     public SpawnerType getSpawnerType() {
-        if (this.spawnPotentials.isEmpty()) {
-            if (this.nextSpawnData == null)
-                return SpawnerType.empty();
+        try {
+            if (this.spawnPotentials.isEmpty()) {
+                if (this.nextSpawnData == null)
+                    return SpawnerType.empty();
 
+                String typeId = this.nextSpawnData.getEntityToSpawn().getString("id");
+                if (typeId.isEmpty())
+                    return SpawnerType.empty();
+
+                return SpawnerType.of(ExtraUtils.getEntityTypeFromKey(NamespacedKey.fromString(typeId)));
+            }
+
+            return SpawnerType.of(this.spawnPotentials.unwrap().stream()
+                    .map(WeightedEntry.Wrapper::getData)
+                    .map(SpawnData::getEntityToSpawn)
+                    .map(x -> x.getString("id"))
+                    .map(NamespacedKey::fromString)
+                    .map(ExtraUtils::getEntityTypeFromKey)
+                    .toList());
+        } catch (Throwable t) {
             String typeId = this.nextSpawnData.getEntityToSpawn().getString("id");
             if (typeId.isEmpty())
                 return SpawnerType.empty();
 
             return SpawnerType.of(ExtraUtils.getEntityTypeFromKey(NamespacedKey.fromString(typeId)));
         }
-
-        return SpawnerType.of(this.spawnPotentials.unwrap().stream()
-                .map(WeightedEntry.Wrapper::getData)
-                .map(SpawnData::getEntityToSpawn)
-                .map(x -> x.getString("id"))
-                .map(NamespacedKey::fromString)
-                .map(ExtraUtils::getEntityTypeFromKey)
-                .toList());
     }
 
     @Override
@@ -182,7 +220,10 @@ public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawne
         if (spawnerType.size() == 1) {
             this.nextSpawnData = new SpawnData();
             this.nextSpawnData.getEntityToSpawn().putString("id", spawnerType.getOrThrow().getKey().getKey());
-            this.spawnPotentials = SimpleWeightedRandomList.empty();
+            try {
+                this.spawnPotentials = SimpleWeightedRandomList.empty();
+            } catch (Throwable t) {
+            }
             this.updateTile();
             return;
         }
@@ -193,9 +234,13 @@ public class StackedSpawnerTileImpl extends BaseSpawner implements StackedSpawne
             tag.putString("id", entityType.getKey().getKey());
             builder.add(new SpawnData(tag, Optional.empty()), 1);
         }
-        this.spawnPotentials = builder.build();
+        try {
+            this.spawnPotentials = builder.build();
 
-        this.spawnPotentials.getRandom(new Random()).map(WeightedEntry.Wrapper::getData).ifPresent(x -> this.nextSpawnData = x);
+            this.spawnPotentials.getRandom(new Random()).map(WeightedEntry.Wrapper::getData)
+                    .ifPresent(x -> this.nextSpawnData = x);
+        } catch (Throwable t) {
+        }
         this.updateTile();
     }
 
