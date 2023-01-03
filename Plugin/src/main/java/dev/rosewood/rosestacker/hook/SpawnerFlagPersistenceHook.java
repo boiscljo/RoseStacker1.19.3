@@ -52,7 +52,7 @@ public class SpawnerFlagPersistenceHook {
      *
      * @param entity The LivingEntity to flag
      */
-    public static void flagSpawnerSpawned(LivingEntity entity) {
+    public static void flagSpawnerSpawned(org.bukkit.entity.Entity entity) {
         if (mcMMOEnabled())
             mcMMOHookHandler.flagSpawnerMetadata(entity);
 
@@ -63,7 +63,8 @@ public class SpawnerFlagPersistenceHook {
         }
 
         if (roseLootEnabled())
-            LootUtils.setEntitySpawnReason(entity, SpawnReason.SPAWNER);
+            if(entity instanceof LivingEntity living)
+                LootUtils.setEntitySpawnReason(living, SpawnReason.SPAWNER);
     }
 
     /**
@@ -71,7 +72,7 @@ public class SpawnerFlagPersistenceHook {
      *
      * @param entity The entity to set the persistence state of
      */
-    public static void setPersistence(LivingEntity entity) {
+    public static void setPersistence(org.bukkit.entity.Entity entity) {
         if (!PersistentDataUtils.isSpawnedFromSpawner(entity))
             return;
 

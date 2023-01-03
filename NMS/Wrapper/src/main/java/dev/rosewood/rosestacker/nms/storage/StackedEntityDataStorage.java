@@ -5,6 +5,8 @@ import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 
 /**
@@ -13,9 +15,9 @@ import org.bukkit.entity.LivingEntity;
 public abstract class StackedEntityDataStorage {
 
     private final StackedEntityDataStorageType type;
-    protected Reference<LivingEntity> entity;
+    protected Reference<Entity> entity;
 
-    public StackedEntityDataStorage(StackedEntityDataStorageType type, LivingEntity entity) {
+    public StackedEntityDataStorage(StackedEntityDataStorageType type, Entity entity) {
         this.type = type;
         this.entity = new WeakReference<>(entity);
     }
@@ -30,7 +32,7 @@ public abstract class StackedEntityDataStorage {
     /**
      * @return the entity that this storage is for
      */
-    public LivingEntity getEntity() {
+    public Entity getEntity() {
         return this.entity.get();
     }
 
@@ -39,7 +41,7 @@ public abstract class StackedEntityDataStorage {
      *
      * @param entity the new entity
      */
-    public void updateEntity(LivingEntity entity) {
+    public void updateEntity(Entity entity) {
         this.entity = new WeakReference<>(entity);
     }
 
@@ -48,14 +50,14 @@ public abstract class StackedEntityDataStorage {
      *
      * @param entity The entity to add
      */
-    public abstract void addFirst(LivingEntity entity);
+    public abstract void addFirst(Entity entity);
 
     /**
      * Adds a new entry to the end
      *
      * @param entity The entity to add
      */
-    public abstract void addLast(LivingEntity entity);
+    public abstract void addLast(Entity entity);
 
     /**
      * Adds all given entries to the front
@@ -133,14 +135,14 @@ public abstract class StackedEntityDataStorage {
      *
      * @param consumer The consumer to call for each element
      */
-    public abstract void forEach(Consumer<LivingEntity> consumer);
+    public abstract void forEach(Consumer<org.bukkit.entity.Entity> consumer);
 
     /**
      * Calls the given consumer for each element in this storage, up to a certain amount
      *
      * @param count the number of entries to call
      */
-    public abstract void forEachCapped(int count, Consumer<LivingEntity> consumer);
+    public abstract void forEachCapped(int count, Consumer<org.bukkit.entity.Entity> consumer);
 
     /**
      * Calls the given function for each element in this storage and removes any element where the function returns true
@@ -148,6 +150,6 @@ public abstract class StackedEntityDataStorage {
      * @param function The function to call for each element
      * @return a list of all removed entries
      */
-    public abstract List<LivingEntity> removeIf(Function<LivingEntity, Boolean> function);
+    public abstract List<org.bukkit.entity.Entity> removeIf(Function<org.bukkit.entity.Entity, Boolean> function);
 
 }

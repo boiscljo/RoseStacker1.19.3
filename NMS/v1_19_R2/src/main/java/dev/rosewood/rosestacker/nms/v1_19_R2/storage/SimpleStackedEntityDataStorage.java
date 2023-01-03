@@ -23,13 +23,13 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
 
     private int size;
 
-    public SimpleStackedEntityDataStorage(LivingEntity livingEntity) {
+    public SimpleStackedEntityDataStorage(org.bukkit.entity.Entity livingEntity) {
         super(StackedEntityDataStorageType.SIMPLE, livingEntity);
 
         this.size = 0;
     }
 
-    public SimpleStackedEntityDataStorage(LivingEntity livingEntity, byte[] data) {
+    public SimpleStackedEntityDataStorage(org.bukkit.entity.Entity livingEntity, byte[] data) {
         this(livingEntity);
 
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
@@ -42,12 +42,12 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public void addFirst(LivingEntity entity) {
+    public void addFirst(org.bukkit.entity.Entity entity) {
         this.size++;
     }
 
     @Override
-    public void addLast(LivingEntity entity) {
+    public void addLast(org.bukkit.entity.Entity entity) {
         this.size++;
     }
 
@@ -120,13 +120,13 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public void forEach(Consumer<LivingEntity> consumer) {
+    public void forEach(Consumer<org.bukkit.entity.Entity> consumer) {
         this.forEachCapped(Integer.MAX_VALUE, consumer);
     }
 
     @Override
-    public void forEachCapped(int count, Consumer<LivingEntity> consumer) {
-        LivingEntity entity = this.entity.get();
+    public void forEachCapped(int count, Consumer<org.bukkit.entity.Entity> consumer) {
+        org.bukkit.entity.Entity entity = this.entity.get();
         if (entity == null)
             return;
 
@@ -137,15 +137,15 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public List<LivingEntity> removeIf(Function<LivingEntity, Boolean> function) {
-        LivingEntity entity = this.entity.get();
+    public List<org.bukkit.entity.Entity> removeIf(Function<org.bukkit.entity.Entity, Boolean> function) {
+        org.bukkit.entity.Entity entity = this.entity.get();
         if (entity == null)
             return List.of();
 
         NMSHandler nmsHandler = NMSAdapter.getHandler();
-        List<LivingEntity> removedEntries = new ArrayList<>(this.size);
+        List<org.bukkit.entity.Entity> removedEntries = new ArrayList<>(this.size);
         for (int i = 0; i < this.size; i++) {
-            LivingEntity clone = nmsHandler.createEntityFromNBT(this.copy(), entity.getLocation(), false, entity.getType());
+            org.bukkit.entity.Entity clone = nmsHandler.createEntityFromNBT(this.copy(), entity.getLocation(), false, entity.getType());
             if (function.apply(clone))
                 removedEntries.add(clone);
         }
@@ -155,7 +155,7 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
 
     private NBTStackedEntityDataEntry copy() {
         CompoundTag tag = new CompoundTag();
-        LivingEntity entity = this.entity.get();
+        org.bukkit.entity.Entity entity = this.entity.get();
         if (entity == null)
             return new NBTStackedEntityDataEntry(tag);
 

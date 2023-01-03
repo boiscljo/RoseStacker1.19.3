@@ -37,7 +37,7 @@ public class CreeperStackSettings extends EntityStackSettings {
     }
 
     @Override
-    public void applyStackProperties(LivingEntity stacking, LivingEntity stack) {
+    public void applyStackProperties(org.bukkit.entity.Entity stacking, org.bukkit.entity.Entity stack) {
         NMSAdapter.getHandler().unigniteCreeper((Creeper) stacking);
     }
 

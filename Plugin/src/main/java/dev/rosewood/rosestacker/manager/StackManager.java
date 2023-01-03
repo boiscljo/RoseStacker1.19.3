@@ -141,7 +141,7 @@ public class StackManager extends Manager implements StackingLogic {
     }
 
     @Override
-    public StackedEntity getStackedEntity(LivingEntity livingEntity) {
+    public StackedEntity getStackedEntity(org.bukkit.entity.Entity livingEntity) {
         StackingThread stackingThread = this.getStackingThread(livingEntity.getWorld());
         if (stackingThread == null)
             return null;
@@ -177,7 +177,7 @@ public class StackManager extends Manager implements StackingLogic {
     }
 
     @Override
-    public boolean isEntityStacked(LivingEntity livingEntity) {
+    public boolean isEntityStacked(org.bukkit.entity.Entity livingEntity) {
         return this.getStackedEntity(livingEntity) != null;
     }
 
@@ -241,7 +241,8 @@ public class StackManager extends Manager implements StackingLogic {
     }
 
     @Override
-    public void updateStackedEntityKey(LivingEntity oldKey, LivingEntity newKey) {
+    public void updateStackedEntityKey(org.bukkit.entity.Entity oldKey, org.bukkit.entity.Entity newKey) {
+        if(oldKey==null || newKey==null) return;
         StackingThread stackingThread = this.getStackingThread(newKey.getWorld());
         if (stackingThread != null)
             stackingThread.updateStackedEntityKey(oldKey, newKey);
@@ -266,7 +267,7 @@ public class StackManager extends Manager implements StackingLogic {
     }
 
     @Override
-    public StackedEntity createEntityStack(LivingEntity livingEntity, boolean tryStack) {
+    public StackedEntity createEntityStack(org.bukkit.entity.Entity livingEntity, boolean tryStack) {
         StackingThread stackingThread = this.getStackingThread(livingEntity.getWorld());
         if (stackingThread == null)
             return null;

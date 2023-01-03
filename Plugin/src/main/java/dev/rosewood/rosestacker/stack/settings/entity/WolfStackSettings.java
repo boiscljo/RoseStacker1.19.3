@@ -42,8 +42,10 @@ public class WolfStackSettings extends EntityStackSettings {
     }
 
     @Override
-    public void applyUnstackProperties(LivingEntity stacked, LivingEntity unstacked) {
+    public void applyUnstackProperties(org.bukkit.entity.Entity stacked, org.bukkit.entity.Entity unstacked) {
         super.applyUnstackProperties(stacked, unstacked);
+        if (stacked == null || unstacked == null)
+            return;
 
         Wolf stackedWolf = (Wolf) stacked;
         Wolf unstackedWolf = (Wolf) unstacked;

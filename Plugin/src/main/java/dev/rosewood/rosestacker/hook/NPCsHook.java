@@ -19,7 +19,7 @@ public class NPCsHook {
     private static Boolean shopkeepersEnabled;
     private static Boolean epicBossesEnabled;
     private static Boolean eliteMobsEnabled;
-    //private static Boolean bossEnabled;
+    // private static Boolean bossEnabled;
     private static Boolean proCosmeticsEnabled;
     private static Boolean infernalMobsEnabled;
     private static Boolean simplePetsEnabled;
@@ -85,15 +85,15 @@ public class NPCsHook {
         return eliteMobsEnabled = Bukkit.getPluginManager().isPluginEnabled("EliteMobs");
     }
 
-//    /**
-//     * @return true if Boss is enabled, false otherwise
-//     */
-//    public static boolean bossEnabled() {
-//        if (bossEnabled != null)
-//            return bossEnabled;
-//
-//        return bossEnabled = Bukkit.getPluginManager().isPluginEnabled("Boss");
-//    }
+    // /**
+    // * @return true if Boss is enabled, false otherwise
+    // */
+    // public static boolean bossEnabled() {
+    // if (bossEnabled != null)
+    // return bossEnabled;
+    //
+    // return bossEnabled = Bukkit.getPluginManager().isPluginEnabled("Boss");
+    // }
 
     /**
      * @return true if ProCosmetics is enabled, false otherwise
@@ -131,7 +131,7 @@ public class NPCsHook {
                 || mythicMobsEnabled()
                 || epicBossesEnabled()
                 || eliteMobsEnabled()
-//                || bossEnabled()
+                // || bossEnabled()
                 || proCosmeticsEnabled()
                 || infernalMobsEnabled()
                 || simplePetsEnabled();
@@ -143,7 +143,7 @@ public class NPCsHook {
      * @param entity The LivingEntity to check
      * @return true if the given LivingEntity is considered an NPC, false otherwise
      */
-    public static boolean isNPC(LivingEntity entity) {
+    public static boolean isNPC(org.bukkit.entity.Entity entity) {
         boolean npc = false;
 
         if (citizensEnabled() && CitizensAPI.hasImplementation())
@@ -152,17 +152,21 @@ public class NPCsHook {
         if (!npc && shopkeepersEnabled() && ShopkeepersAPI.isEnabled())
             npc = ShopkeepersAPI.getShopkeeperRegistry().isShopkeeper(entity);
 
-        if (!npc && mythicMobsEnabled() && !Setting.MISC_MYTHICMOBS_ALLOW_STACKING.getBoolean() && mythicMobsHook != null)
-            npc = mythicMobsHook.isMythicMob(entity);
+        if (!npc && mythicMobsEnabled() && !Setting.MISC_MYTHICMOBS_ALLOW_STACKING.getBoolean()
+                && mythicMobsHook != null)
+            if (entity instanceof LivingEntity living)
+                npc = mythicMobsHook.isMythicMob(entity);
 
         if (!npc && epicBossesEnabled())
-            npc = EpicBosses.getInstance().getBossEntityManager().getActiveBossHolder(entity) != null;
+            if (entity instanceof LivingEntity living)
+
+                npc = EpicBosses.getInstance().getBossEntityManager().getActiveBossHolder(living) != null;
 
         if (!npc && eliteMobsEnabled())
             npc = EntityTracker.isEliteMob(entity) && EntityTracker.isNPCEntity(entity);
 
-//        if (!npc && bossEnabled())
-//            npc = BossAPI.isBoss(entity);
+        // if (!npc && bossEnabled())
+        // npc = BossAPI.isBoss(entity);
 
         if (!npc && proCosmeticsEnabled())
             npc = entity.hasMetadata("PROCOSMETICS_ENTITY");

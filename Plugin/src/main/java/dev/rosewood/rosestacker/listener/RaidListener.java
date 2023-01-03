@@ -33,7 +33,7 @@ public class RaidListener implements Listener {
      * @param entity The LivingEntity to check
      * @return true if the LivingEntity is part of a raid, false otherwise
      */
-    public static boolean isActiveRaider(LivingEntity entity) {
+    public static boolean isActiveRaider(org.bukkit.entity.Entity entity) {
         if (NMSUtil.getVersionNumber() < 14 || !(entity instanceof Raider))
             return false;
 

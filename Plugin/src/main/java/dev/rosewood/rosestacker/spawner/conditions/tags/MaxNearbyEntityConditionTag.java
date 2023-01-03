@@ -45,7 +45,7 @@ public class MaxNearbyEntityConditionTag extends ConditionTag {
 
         if (Setting.SPAWNER_MAX_NEARBY_ENTITIES_INCLUDE_STACKS.getBoolean()) {
             return nearbyEntities.stream().mapToInt(x -> {
-                StackedEntity stackedEntity = this.stackManager.getStackedEntity((LivingEntity) x);
+                StackedEntity stackedEntity = this.stackManager.getStackedEntity((org.bukkit.entity.Entity) x);
                 return stackedEntity == null ? 1 : stackedEntity.getStackSize();
             }).sum() < this.maxNearbyEntities;
         } else {

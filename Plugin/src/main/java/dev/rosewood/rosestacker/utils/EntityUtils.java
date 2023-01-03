@@ -52,7 +52,7 @@ public final class EntityUtils {
      * @param lootedLocation The location the entity is being looted at
      * @return The loot
      */
-    public static Collection<ItemStack> getEntityLoot(LivingEntity entity, Player killer, Location lootedLocation) {
+    public static Collection<ItemStack> getEntityLoot(org.bukkit.entity.Entity entity, Player killer, Location lootedLocation) {
         if (entity instanceof Lootable lootable) {
             if (lootable.getLootTable() == null)
                 return Set.of();
@@ -100,13 +100,13 @@ public final class EntityUtils {
      */
     public static boolean hasLineOfSight(Entity entity1, Entity entity2, double accuracy, boolean requireOccluding) {
         if (entity1 instanceof LivingEntity) // Try to use the NMS method if possible, it's significantly faster
-            return NMSAdapter.getHandler().hasLineOfSight((LivingEntity) entity1, entity2);
+            return NMSAdapter.getHandler().hasLineOfSight((org.bukkit.entity.Entity) entity1, entity2);
 
         Location location1 = entity1.getLocation().clone();
         Location location2 = entity2.getLocation().clone();
 
-        if (entity2 instanceof LivingEntity)
-            location2.add(0, ((LivingEntity) entity2).getEyeHeight(), 0);
+        if (entity2 instanceof LivingEntity living)
+            location2.add(0, living.getEyeHeight(), 0);
 
         Vector vector1 = location1.toVector();
         Vector vector2 = location2.toVector();

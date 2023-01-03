@@ -66,8 +66,10 @@ public class BeeStackSettings extends EntityStackSettings {
     }
 
     @Override
-    public void applyUnstackProperties(LivingEntity stacked, LivingEntity unstacked) {
+    public void applyUnstackProperties(org.bukkit.entity.Entity stacked, org.bukkit.entity.Entity unstacked) {
         super.applyUnstackProperties(stacked, unstacked);
+        if (stacked == null || unstacked == null)
+            return;
 
         Bee stackedBee = (Bee) stacked;
         Bee unstackedBee = (Bee) unstacked;

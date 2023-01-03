@@ -17,19 +17,21 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import net.minecraft.server.v1_16_R3.NBTTagCompound;
+
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 
 public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
 
     private int size;
 
-    public SimpleStackedEntityDataStorage(LivingEntity livingEntity) {
+    public SimpleStackedEntityDataStorage(Entity livingEntity) {
         super(StackedEntityDataStorageType.SIMPLE, livingEntity);
 
         this.size = 0;
     }
 
-    public SimpleStackedEntityDataStorage(LivingEntity livingEntity, byte[] data) {
+    public SimpleStackedEntityDataStorage(Entity livingEntity, byte[] data) {
         this(livingEntity);
 
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
@@ -42,12 +44,12 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public void addFirst(LivingEntity entity) {
+    public void addFirst(Entity entity) {
         this.size++;
     }
 
     @Override
-    public void addLast(LivingEntity entity) {
+    public void addLast(Entity entity) {
         this.size++;
     }
 
@@ -120,13 +122,13 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public void forEach(Consumer<LivingEntity> consumer) {
+    public void forEach(Consumer<Entity> consumer) {
         this.forEachCapped(Integer.MAX_VALUE, consumer);
     }
 
     @Override
-    public void forEachCapped(int count, Consumer<LivingEntity> consumer) {
-        LivingEntity entity = this.entity.get();
+    public void forEachCapped(int count, Consumer<Entity> consumer) {
+        org.bukkit.entity.Entity entity = this.entity.get();
         if (entity == null)
             return;
 
@@ -137,15 +139,15 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public List<LivingEntity> removeIf(Function<LivingEntity, Boolean> function) {
-        LivingEntity entity = this.entity.get();
+    public List<Entity> removeIf(Function<Entity, Boolean> function) {
+        Entity entity = this.entity.get();
         if (entity == null)
             return List.of();
 
         NMSHandler nmsHandler = NMSAdapter.getHandler();
-        List<LivingEntity> removedEntries = new ArrayList<>(this.size);
+        List<Entity> removedEntries = new ArrayList<>(this.size);
         for (int i = 0; i < this.size; i++) {
-            LivingEntity clone = nmsHandler.createEntityFromNBT(this.copy(), entity.getLocation(), false, entity.getType());
+            Entity clone = nmsHandler.createEntityFromNBT(this.copy(), entity.getLocation(), false, entity.getType());
             if (function.apply(clone))
                 removedEntries.add(clone);
         }
@@ -155,7 +157,7 @@ public class SimpleStackedEntityDataStorage extends StackedEntityDataStorage {
 
     private NBTStackedEntityDataEntry copy() {
         NBTTagCompound tag = new NBTTagCompound();
-        LivingEntity entity = this.entity.get();
+        Entity entity = this.entity.get();
         if (entity == null)
             return new NBTStackedEntityDataEntry(tag);
 

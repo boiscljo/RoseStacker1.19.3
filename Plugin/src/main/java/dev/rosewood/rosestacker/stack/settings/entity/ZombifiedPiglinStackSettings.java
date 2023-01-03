@@ -14,7 +14,8 @@ public class ZombifiedPiglinStackSettings extends EntityStackSettings {
 
     protected final boolean dontStackIfAngry;
 
-    public ZombifiedPiglinStackSettings(CommentedFileConfiguration entitySettingsFileConfiguration, JsonObject jsonObject) {
+    public ZombifiedPiglinStackSettings(CommentedFileConfiguration entitySettingsFileConfiguration,
+            JsonObject jsonObject) {
         super(entitySettingsFileConfiguration, jsonObject);
 
         this.dontStackIfAngry = this.settingsConfiguration.getBoolean("dont-stack-if-angry");
@@ -37,8 +38,10 @@ public class ZombifiedPiglinStackSettings extends EntityStackSettings {
     }
 
     @Override
-    public void applyUnstackProperties(LivingEntity stacked, LivingEntity unstacked) {
+    public void applyUnstackProperties(org.bukkit.entity.Entity stacked, org.bukkit.entity.Entity unstacked) {
         super.applyUnstackProperties(stacked, unstacked);
+        if (stacked == null || unstacked == null)
+            return;
 
         PigZombie stackedPigZombie = (PigZombie) stacked;
         PigZombie unstackedPigZombie = (PigZombie) unstacked;

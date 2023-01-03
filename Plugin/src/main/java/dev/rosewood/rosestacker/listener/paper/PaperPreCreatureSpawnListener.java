@@ -46,7 +46,7 @@ public class PaperPreCreatureSpawnListener implements Listener {
         int total = 0;
         Collection<Entity> entities = this.entityCacheManager.getNearbyEntities(event.getSpawnLocation(), 16, x -> x.getSpawnCategory() == spawnCategory);
         for (Entity entity : entities) {
-            LivingEntity livingEntity = (LivingEntity) entity;
+            Entity livingEntity = entity;
             StackedEntity stackedEntity = this.stackManager.getStackedEntity(livingEntity);
             if (stackedEntity == null) {
                 total++;

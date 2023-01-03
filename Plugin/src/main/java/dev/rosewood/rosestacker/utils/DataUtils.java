@@ -41,7 +41,7 @@ public final class DataUtils {
     private static final NamespacedKey CHUNK_BLOCKS_KEY = new NamespacedKey(RoseStacker.getInstance(), "stacked_block_data");
     private static final int BLOCK_DATA_VERSION = 1;
 
-    public static StackedEntity readStackedEntity(LivingEntity entity, StackedEntityDataStorageType storageType) {
+    public static StackedEntity readStackedEntity(org.bukkit.entity.Entity entity, StackedEntityDataStorageType storageType) {
         PersistentDataContainer pdc = entity.getPersistentDataContainer();
         NMSHandler nmsHandler = NMSAdapter.getHandler();
         byte[] data = pdc.get(ENTITY_KEY, PersistentDataType.BYTE_ARRAY);
@@ -100,7 +100,7 @@ public final class DataUtils {
             pdc.set(ENTITY_KEY, PersistentDataType.BYTE_ARRAY, data);
     }
 
-    public static void clearStackedEntityData(LivingEntity entity) {
+    public static void clearStackedEntityData(org.bukkit.entity.Entity entity) {
         entity.getPersistentDataContainer().remove(ENTITY_KEY);
     }
 

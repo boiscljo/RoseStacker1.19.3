@@ -20,7 +20,7 @@ public class EntityConversionHandler extends ConversionHandler {
         Set<Stack<?>> stacks = new HashSet<>();
 
         for (ConversionData data : conversionData) {
-            LivingEntity entity = data.getEntity();
+            org.bukkit.entity.Entity entity = data.getEntity();
             entity.setCustomName(null); // This could cause data loss if the entity actually has a custom name, but we have to remove the stack tag
             entity.setCustomNameVisible(false);
 

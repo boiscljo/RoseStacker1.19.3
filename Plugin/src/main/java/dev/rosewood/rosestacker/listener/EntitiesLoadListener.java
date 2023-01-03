@@ -22,7 +22,7 @@ public class EntitiesLoadListener implements Listener {
     public void onEntitiesLoad(EntitiesLoadEvent event) {
         for (Entity entity : event.getEntities())
             if (entity instanceof LivingEntity)
-                PersistentDataUtils.applyDisabledAi((LivingEntity) entity);
+                PersistentDataUtils.applyDisabledAi((org.bukkit.entity.Entity) entity);
 
         this.stackManager.loadChunkEntities(event.getChunk(), event.getEntities());
     }

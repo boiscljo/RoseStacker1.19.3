@@ -160,7 +160,7 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public StackedEntityDataEntry<CompoundTag> getEntityAsNBT(LivingEntity livingEntity) {
+    public StackedEntityDataEntry<CompoundTag> getEntityAsNBT(org.bukkit.entity.Entity livingEntity) {
         CompoundTag nbt = new CompoundTag();
         net.minecraft.world.entity.LivingEntity nmsEntity = ((CraftLivingEntity) livingEntity).getHandle();
         nmsEntity.save(nbt);
@@ -176,7 +176,7 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public LivingEntity createEntityFromNBT(StackedEntityDataEntry<?> serialized, Location location, boolean addToWorld, EntityType entityType) {
+    public org.bukkit.entity.Entity createEntityFromNBT(StackedEntityDataEntry<?> serialized, Location location, boolean addToWorld, EntityType entityType) {
         try {
             CompoundTag nbt = (CompoundTag) serialized.get();
 
@@ -219,7 +219,7 @@ public class NMSHandlerImpl implements NMSHandler {
                     entity.invulnerableTime = 0;
                 }
 
-                return (LivingEntity) entity.getBukkitEntity();
+                return (org.bukkit.entity.Entity) entity.getBukkitEntity();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -229,13 +229,13 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public LivingEntity createNewEntityUnspawned(EntityType entityType, Location location, SpawnReason spawnReason) {
+    public org.bukkit.entity.Entity createNewEntityUnspawned(EntityType entityType, Location location, SpawnReason spawnReason) {
         World world = location.getWorld();
         if (world == null)
             return null;
 
         Class<? extends org.bukkit.entity.Entity> entityClass = entityType.getEntityClass();
-        if (entityClass == null || !LivingEntity.class.isAssignableFrom(entityClass))
+        if (entityClass == null || !org.bukkit.entity.Entity.class.isAssignableFrom(entityClass))
             throw new IllegalArgumentException("EntityType must be of a LivingEntity");
 
         net.minecraft.world.entity.EntityType<? extends Entity> nmsEntityType = BuiltInRegistries.ENTITY_TYPE.get(CraftNamespacedKey.toMinecraft(entityType.getKey()));
@@ -247,7 +247,7 @@ public class NMSHandlerImpl implements NMSHandler {
                 this.toNmsSpawnReason(spawnReason)
         );
 
-        return nmsEntity == null ? null : (LivingEntity) nmsEntity.getBukkitEntity();
+        return nmsEntity == null ? null : (org.bukkit.entity.Entity) nmsEntity.getBukkitEntity();
     }
 
     /**
@@ -297,7 +297,7 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void spawnExistingEntity(LivingEntity entity, SpawnReason spawnReason, boolean bypassSpawnEvent) {
+    public void spawnExistingEntity(org.bukkit.entity.Entity entity, SpawnReason spawnReason, boolean bypassSpawnEvent) {
         Location location = entity.getLocation();
         World world = location.getWorld();
         if (world == null)
@@ -355,7 +355,7 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void removeEntityGoals(LivingEntity livingEntity) {
+    public void removeEntityGoals(org.bukkit.entity.Entity livingEntity) {
         net.minecraft.world.entity.LivingEntity nmsEntity = ((CraftLivingEntity) livingEntity).getHandle();
         if (!(nmsEntity instanceof Mob))
             return;
@@ -437,27 +437,27 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void setLastHurtBy(LivingEntity livingEntity, Player player) {
+    public void setLastHurtBy(org.bukkit.entity.Entity livingEntity, Player player) {
         if (player != null)
             ((CraftLivingEntity) livingEntity).getHandle().lastHurtByPlayer = ((CraftPlayer) player).getHandle();
     }
 
     @Override
-    public boolean hasLineOfSight(LivingEntity entity1, Location location) {
+    public boolean hasLineOfSight(org.bukkit.entity.Entity entity1, Location location) {
         net.minecraft.world.entity.LivingEntity nmsEntity1 = ((CraftLivingEntity) entity1).getHandle();
         Vec3 vec3d = new Vec3(nmsEntity1.getX(), nmsEntity1.getEyeY(), nmsEntity1.getZ());
         Vec3 target = new Vec3(location.getX(), location.getY(), location.getZ());
         return nmsEntity1.level.clip(new ClipContext(vec3d, target, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, nmsEntity1)).getType() == HitResult.Type.MISS;
     }
 
-    public StackedEntityDataStorage createEntityDataStorage(LivingEntity livingEntity, StackedEntityDataStorageType storageType) {
+    public StackedEntityDataStorage createEntityDataStorage(org.bukkit.entity.Entity livingEntity, StackedEntityDataStorageType storageType) {
         return switch (storageType) {
             case NBT -> new NBTStackedEntityDataStorage(livingEntity);
             case SIMPLE -> new SimpleStackedEntityDataStorage(livingEntity);
         };
     }
 
-    public StackedEntityDataStorage deserializeEntityDataStorage(LivingEntity livingEntity, byte[] data, StackedEntityDataStorageType storageType) {
+    public StackedEntityDataStorage deserializeEntityDataStorage(org.bukkit.entity.Entity livingEntity, byte[] data, StackedEntityDataStorageType storageType) {
         return switch (storageType) {
             case NBT -> new NBTStackedEntityDataStorage(livingEntity, data);
             case SIMPLE -> new SimpleStackedEntityDataStorage(livingEntity, data);
@@ -544,7 +544,7 @@ public class NMSHandlerImpl implements NMSHandler {
         Bukkit.getPluginManager().getPlugin("RoseStacker").getLogger().info(message);
     }
 
-    public void saveEntityToTag(LivingEntity livingEntity, CompoundTag compoundTag) {
+    public void saveEntityToTag(org.bukkit.entity.Entity livingEntity, CompoundTag compoundTag) {
         // Async villager "fix", if the trades aren't loaded yet force them to save as empty, they will get loaded later
         if (livingEntity instanceof AbstractVillager) {
             try {

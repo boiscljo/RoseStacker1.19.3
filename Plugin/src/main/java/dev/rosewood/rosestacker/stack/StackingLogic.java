@@ -46,7 +46,7 @@ public interface StackingLogic {
      * @param livingEntity the target entity
      * @return a StackedEntity, or null if not found
      */
-    StackedEntity getStackedEntity(LivingEntity livingEntity);
+    StackedEntity getStackedEntity(org.bukkit.entity.Entity livingEntity);
 
     /**
      * Gets a StackedItem for a given Item
@@ -78,7 +78,7 @@ public interface StackingLogic {
      * @param livingEntity the entity to check
      * @return true if the entity is part of a StackedEntity, otherwise false
      */
-    boolean isEntityStacked(LivingEntity livingEntity);
+    boolean isEntityStacked(org.bukkit.entity.Entity livingEntity);
 
     /**
      * Checks if a given Item is part of a StackedItem
@@ -153,7 +153,7 @@ public interface StackingLogic {
      * @param oldKey the LivingEntity at the old head of the stack
      * @param newKey the LivingEntity at the new head of the stack
      */
-    void updateStackedEntityKey(LivingEntity oldKey, LivingEntity newKey);
+    void updateStackedEntityKey(org.bukkit.entity.Entity oldKey, org.bukkit.entity.Entity newKey);
 
     /**
      * Splits the top entity off the StackedEntity
@@ -179,7 +179,7 @@ public interface StackingLogic {
      * @param tryStack true to try to stack the entity instantly, otherwise false
      * @return the newly created stack, or null if one wasn't created
      */
-    StackedEntity createEntityStack(LivingEntity livingEntity, boolean tryStack);
+    StackedEntity createEntityStack(org.bukkit.entity.Entity livingEntity, boolean tryStack);
 
     /**
      * Creates a StackedItem from an Item

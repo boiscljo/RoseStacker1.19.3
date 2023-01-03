@@ -45,7 +45,7 @@ public class WorldListener implements Listener {
             if (NMSUtil.getVersionNumber() < 17 && this.stackManager.isEntityStackingEnabled())
                 for (Entity entity : chunk.getEntities())
                     if (entity instanceof LivingEntity)
-                        this.stackManager.createEntityStack((LivingEntity) entity, true);
+                        this.stackManager.createEntityStack((org.bukkit.entity.Entity) entity, true);
 
             // Stack new spawners
             if (this.stackManager.isSpawnerStackingEnabled())
@@ -58,7 +58,7 @@ public class WorldListener implements Listener {
                 Entity[] entities = chunk.getEntities();
                 for (Entity entity : entities)
                     if (entity instanceof LivingEntity)
-                        PersistentDataUtils.applyDisabledAi((LivingEntity) entity);
+                        PersistentDataUtils.applyDisabledAi((org.bukkit.entity.Entity) entity);
 
                 this.stackManager.loadChunkEntities(chunk, List.of(entities));
             }

@@ -25,6 +25,8 @@ import net.minecraft.server.v1_16_R3.NBTBase;
 import net.minecraft.server.v1_16_R3.NBTCompressedStreamTools;
 import net.minecraft.server.v1_16_R3.NBTTagCompound;
 import net.minecraft.server.v1_16_R3.NBTTagList;
+
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 
 public class NBTStackedEntityDataStorage extends StackedEntityDataStorage {
@@ -32,7 +34,7 @@ public class NBTStackedEntityDataStorage extends StackedEntityDataStorage {
     private final NBTTagCompound base;
     private final List<NBTTagCompound> data;
 
-    public NBTStackedEntityDataStorage(LivingEntity livingEntity) {
+    public NBTStackedEntityDataStorage(Entity livingEntity) {
         super(StackedEntityDataStorageType.NBT, livingEntity);
         this.base = new NBTTagCompound();
 
@@ -43,7 +45,7 @@ public class NBTStackedEntityDataStorage extends StackedEntityDataStorage {
         this.data = Collections.synchronizedList(new LinkedList<>());
     }
 
-    public NBTStackedEntityDataStorage(LivingEntity livingEntity, byte[] data) {
+    public NBTStackedEntityDataStorage(Entity livingEntity, byte[] data) {
         super(StackedEntityDataStorageType.NBT, livingEntity);
         try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
              ObjectInputStream dataInput = new ObjectInputStream(inputStream)) {
@@ -60,12 +62,12 @@ public class NBTStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public void addFirst(LivingEntity entity) {
+    public void addFirst(org.bukkit.entity.Entity entity) {
         this.addAt(0, entity);
     }
 
     @Override
-    public void addLast(LivingEntity entity) {
+    public void addLast(org.bukkit.entity.Entity entity) {
         this.addAt(this.data.size(), entity);
     }
 
@@ -147,38 +149,38 @@ public class NBTStackedEntityDataStorage extends StackedEntityDataStorage {
     }
 
     @Override
-    public void forEach(Consumer<LivingEntity> consumer) {
+    public void forEach(Consumer<org.bukkit.entity.Entity> consumer) {
         this.forEachCapped(Integer.MAX_VALUE, consumer);
     }
 
     @Override
-    public void forEachCapped(int count, Consumer<LivingEntity> consumer) {
+    public void forEachCapped(int count, Consumer<org.bukkit.entity.Entity> consumer) {
         if (count > this.data.size())
             count = this.data.size();
 
         NMSHandler nmsHandler = NMSAdapter.getHandler();
-        LivingEntity thisEntity = this.entity.get();
+        org.bukkit.entity.Entity thisEntity = this.entity.get();
         if (thisEntity == null)
             return;
 
         Iterator<NBTTagCompound> iterator = this.data.iterator();
         for (int i = 0; i < count; i++) {
             NBTTagCompound compoundTag = iterator.next();
-            LivingEntity entity = nmsHandler.createEntityFromNBT(new NBTStackedEntityDataEntry(this.rebuild(compoundTag)), thisEntity.getLocation(), false, thisEntity.getType());
+            org.bukkit.entity.Entity entity = nmsHandler.createEntityFromNBT(new NBTStackedEntityDataEntry(this.rebuild(compoundTag)), thisEntity.getLocation(), false, thisEntity.getType());
             consumer.accept(entity);
         }
     }
 
     @Override
-    public List<LivingEntity> removeIf(Function<LivingEntity, Boolean> function) {
-        List<LivingEntity> removedEntries = new ArrayList<>(this.data.size());
-        LivingEntity thisEntity = this.entity.get();
+    public List<org.bukkit.entity.Entity> removeIf(Function<org.bukkit.entity.Entity, Boolean> function) {
+        List<org.bukkit.entity.Entity> removedEntries = new ArrayList<>(this.data.size());
+        org.bukkit.entity.Entity thisEntity = this.entity.get();
         if (thisEntity == null)
             return removedEntries;
 
         NMSHandler nmsHandler = NMSAdapter.getHandler();
         this.data.removeIf(x -> {
-            LivingEntity entity = nmsHandler.createEntityFromNBT(new NBTStackedEntityDataEntry(this.rebuild(x)), thisEntity.getLocation(), false, thisEntity.getType());
+            org.bukkit.entity.Entity entity = nmsHandler.createEntityFromNBT(new NBTStackedEntityDataEntry(this.rebuild(x)), thisEntity.getLocation(), false, thisEntity.getType());
             boolean removed = function.apply(entity);
             if (removed) removedEntries.add(entity);
             return removed;
@@ -186,7 +188,7 @@ public class NBTStackedEntityDataStorage extends StackedEntityDataStorage {
         return removedEntries;
     }
 
-    private void addAt(int index, LivingEntity livingEntity) {
+    private void addAt(int index, org.bukkit.entity.Entity livingEntity) {
         NBTTagCompound compoundTag = new NBTTagCompound();
         ((NMSHandlerImpl) NMSAdapter.getHandler()).saveEntityToTag(livingEntity, compoundTag);
         this.stripUnneeded(compoundTag);

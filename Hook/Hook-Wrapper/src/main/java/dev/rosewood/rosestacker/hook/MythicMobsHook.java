@@ -10,6 +10,6 @@ public interface MythicMobsHook {
      * @param entity the entity to check
      * @return true if the entity is a MythicMob, false otherwise
      */
-    boolean isMythicMob(LivingEntity entity);
+    boolean isMythicMob(org.bukkit.entity.Entity entity);
 
 }

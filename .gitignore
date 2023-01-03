@@ -30,3 +30,7 @@ target/
 /bin/
 /libs/
 bin
+.vscode
+COLCON_IGNORE
+latest
+latest_list

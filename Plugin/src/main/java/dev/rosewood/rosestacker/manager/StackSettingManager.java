@@ -1,5 +1,6 @@
 package dev.rosewood.rosestacker.manager;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.rosewood.rosegarden.RosePlugin;
@@ -13,6 +14,7 @@ import dev.rosewood.rosestacker.stack.settings.BlockStackSettings;
 import dev.rosewood.rosestacker.stack.settings.EntityStackSettings;
 import dev.rosewood.rosestacker.stack.settings.ItemStackSettings;
 import dev.rosewood.rosestacker.stack.settings.SpawnerStackSettings;
+import dev.rosewood.rosestacker.stack.settings.entity.BaseStackSettings;
 import dev.rosewood.rosestacker.utils.ItemUtils;
 import dev.rosewood.rosestacker.utils.StackerUtils;
 import java.io.File;
@@ -75,7 +77,8 @@ public class StackSettingManager extends Manager {
         AtomicBoolean saveSpawnerSettingsFile = new AtomicBoolean(false);
 
         // Load block settings
-        CommentedFileConfiguration blockSettingsConfiguration = CommentedFileConfiguration.loadConfiguration(blockSettingsFile);
+        CommentedFileConfiguration blockSettingsConfiguration = CommentedFileConfiguration
+                .loadConfiguration(blockSettingsFile);
         StackerUtils.getPossibleStackableBlockMaterials().forEach(x -> {
             BlockStackSettings blockStackSettings = new BlockStackSettings(blockSettingsConfiguration, x);
             this.blockSettings.put(x, blockStackSettings);
@@ -84,19 +87,23 @@ public class StackSettingManager extends Manager {
         });
 
         // Load entity settings and data from entity_data.json
-        CommentedFileConfiguration entitySettingsConfiguration = CommentedFileConfiguration.loadConfiguration(entitySettingsFile);
+        CommentedFileConfiguration entitySettingsConfiguration = CommentedFileConfiguration
+                .loadConfiguration(entitySettingsFile);
         try (InputStream entityDataStream = this.getClass().getResourceAsStream("/entity_data.json");
-             Reader entityDataReader = new InputStreamReader(entityDataStream)) {
+                Reader entityDataReader = new InputStreamReader(entityDataStream)) {
             JsonParser jsonParser = new JsonParser();
             JsonObject jsonObject = jsonParser.parse(entityDataReader).getAsJsonObject();
 
-            List<Class<EntityStackSettings>> classes = ClassUtils.getClassesOf(this.rosePlugin, PACKAGE_PATH, EntityStackSettings.class);
+            List<Class<EntityStackSettings>> classes = ClassUtils.getClassesOf(this.rosePlugin, PACKAGE_PATH,
+                    EntityStackSettings.class);
             classes.sort(Comparator.comparing(Class::getSimpleName));
 
             List<String> ignoredLoading = new ArrayList<>();
             for (Class<EntityStackSettings> clazz : classes) {
                 try {
-                    EntityStackSettings entityStackSetting = clazz.getConstructor(CommentedFileConfiguration.class, JsonObject.class).newInstance(entitySettingsConfiguration, jsonObject);
+                    EntityStackSettings entityStackSetting = clazz
+                            .getConstructor(CommentedFileConfiguration.class, JsonObject.class)
+                            .newInstance(entitySettingsConfiguration, jsonObject);
                     this.entitySettings.put(entityStackSetting.getEntityType(), entityStackSetting);
                     if (entityStackSetting.hasChanges())
                         saveEntitySettingsFile.set(true);
@@ -113,9 +120,25 @@ public class StackSettingManager extends Manager {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        for (EntityType et : EntityType.values()) {
+            if (!this.entitySettings.containsKey(et)) {
+                if (et != null) {
+                    JsonParser jsonParser = new JsonParser();
+                    JsonElement baseElement = jsonParser.parse("{\""+et.name()+"\":{\"is_swimming_mob\": false,\"is_flying_mob\": true,\"spawn_egg_material\": \""+et+"_SPAWN_EGG\","+
+                        "\"default_spawn_requirements\": [],\"skull_texture\": \"eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNjI0YjMyYWUwNjY2M2I4NjczNTk1NDMyNTU4NWViNDA4YWMwMzg5Y2E0MGM1MTc3MDFlZDFlNjVhOTJlNjNmZSJ9fX0=\","+
+                        "\"breeding_materials\": [],\"spawn_category\": \"ANIMAL\"}}");
+
+                    BaseStackSettings entityStackSetting = new BaseStackSettings(entitySettingsConfiguration,baseElement.getAsJsonObject(), et);
+                    this.entitySettings.put(et, entityStackSetting);
+                    if (entityStackSetting.hasChanges())
+                        saveEntitySettingsFile.set(true);
+                }
+            }
+        }
 
         // Load item settings
-        CommentedFileConfiguration itemSettingsConfiguration = CommentedFileConfiguration.loadConfiguration(itemSettingsFile);
+        CommentedFileConfiguration itemSettingsConfiguration = CommentedFileConfiguration
+                .loadConfiguration(itemSettingsFile);
         Stream.of(Material.values()).sorted(Comparator.comparing(Enum::name)).forEach(x -> {
             ItemStackSettings itemStackSettings = new ItemStackSettings(itemSettingsConfiguration, x);
             this.itemSettings.put(x, itemStackSettings);
@@ -125,7 +148,8 @@ public class StackSettingManager extends Manager {
 
         // Load spawner settings
         boolean addSpawnerHeaderComments = !spawnerSettingsFile.exists();
-        CommentedFileConfiguration spawnerSettingsConfiguration = CommentedFileConfiguration.loadConfiguration(spawnerSettingsFile);
+        CommentedFileConfiguration spawnerSettingsConfiguration = CommentedFileConfiguration
+                .loadConfiguration(spawnerSettingsFile);
         if (addSpawnerHeaderComments) {
             saveSpawnerSettingsFile.set(true);
             Map<String, String> conditionTags = ConditionTags.getTagDescriptionMap();
@@ -142,8 +166,7 @@ public class StackSettingManager extends Manager {
                     "Valid Biomes: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/Biome.html",
                     "",
                     "Want to remove all requirements? Set the value to the following:",
-                    "spawn-requirements: []"
-            );
+                    "spawn-requirements: []");
         }
 
         TreeSet<SpawnerType> spawnerTypes = new TreeSet<>(Comparator.comparing(SpawnerType::getEnumName));
@@ -151,11 +174,24 @@ public class StackSettingManager extends Manager {
             spawnerTypes.add(SpawnerType.empty());
         this.entitySettings.keySet().forEach(x -> spawnerTypes.add(SpawnerType.of(x)));
         spawnerTypes.forEach(spawnerType -> {
-            SpawnerStackSettings spawnerStackSettings = new SpawnerStackSettings(spawnerSettingsConfiguration, spawnerType);
+            SpawnerStackSettings spawnerStackSettings = new SpawnerStackSettings(spawnerSettingsConfiguration,
+                    spawnerType);
             this.spawnerSettings.put(spawnerType, spawnerStackSettings);
             if (spawnerStackSettings.hasChanges())
                 saveSpawnerSettingsFile.set(true);
         });
+        for (EntityType et : EntityType.values()) {
+            SpawnerType spawnerType = SpawnerType.of(et);
+            if (!this.spawnerSettings.containsKey(spawnerType)) {
+                if (spawnerType != null) {
+                    SpawnerStackSettings spawnerStackSettings = new SpawnerStackSettings(spawnerSettingsConfiguration,
+                    spawnerType);
+                    this.spawnerSettings.put(spawnerType, spawnerStackSettings);
+                    if (spawnerStackSettings.hasChanges())
+                        saveSpawnerSettingsFile.set(true);
+                }
+            }
+        }
 
         // Save files if changes were made
         if (saveBlockSettingsFile.get())
@@ -184,15 +220,18 @@ public class StackSettingManager extends Manager {
 
             // Register silktouch permissions
             silktouch.forEach(pluginManager::addPermission);
-            pluginManager.addPermission(new Permission("rosestacker.silktouch.*", silktouch.stream().collect(Collectors.toMap(Permission::getName, x -> true))));
+            pluginManager.addPermission(new Permission("rosestacker.silktouch.*",
+                    silktouch.stream().collect(Collectors.toMap(Permission::getName, x -> true))));
 
             // Register nosilk permissions
             nosilk.forEach(pluginManager::addPermission);
-            pluginManager.addPermission(new Permission("rosestacker.nosilk.*", nosilk.stream().collect(Collectors.toMap(Permission::getName, x -> true))));
+            pluginManager.addPermission(new Permission("rosestacker.nosilk.*",
+                    nosilk.stream().collect(Collectors.toMap(Permission::getName, x -> true))));
 
             // Register spawnerplace permissions
             spawnerplace.forEach(pluginManager::addPermission);
-            pluginManager.addPermission(new Permission("rosestacker.spawnerplace.*", spawnerplace.stream().collect(Collectors.toMap(Permission::getName, x -> true))));
+            pluginManager.addPermission(new Permission("rosestacker.spawnerplace.*",
+                    spawnerplace.stream().collect(Collectors.toMap(Permission::getName, x -> true))));
 
             this.registeredPermissions = true;
         }
@@ -226,7 +265,8 @@ public class StackSettingManager extends Manager {
      * Gets the BlockStackSettings for a block type
      *
      * @param material The block material to get the settings of
-     * @return The BlockStackSettings for the block type, or null if the block type is not stackable
+     * @return The BlockStackSettings for the block type, or null if the block type
+     *         is not stackable
      */
     public BlockStackSettings getBlockStackSettings(Material material) {
         return this.blockSettings.get(material);
@@ -236,7 +276,8 @@ public class StackSettingManager extends Manager {
      * Gets the BlockStackSettings for a block
      *
      * @param block The block to get the settings of
-     * @return The BlockStackSettings for the block, or null if the block type is not stackable
+     * @return The BlockStackSettings for the block, or null if the block type is
+     *         not stackable
      */
     public BlockStackSettings getBlockStackSettings(Block block) {
         return this.getBlockStackSettings(block.getType());
@@ -258,7 +299,7 @@ public class StackSettingManager extends Manager {
      * @param entity The entity to get the settings of
      * @return The EntityStackSettings for the entity
      */
-    public EntityStackSettings getEntityStackSettings(LivingEntity entity) {
+    public EntityStackSettings getEntityStackSettings(org.bukkit.entity.Entity entity) {
         return this.getEntityStackSettings(entity.getType());
     }
 
@@ -266,7 +307,8 @@ public class StackSettingManager extends Manager {
      * Gets the EntityStackSettings for a spawn egg material
      *
      * @param material The spawn egg material to get the settings of
-     * @return The EntityStackSettings for the spawn egg material, or null if the material is not a spawn egg
+     * @return The EntityStackSettings for the spawn egg material, or null if the
+     *         material is not a spawn egg
      */
     public EntityStackSettings getEntityStackSettings(Material material) {
         if (!ItemUtils.isSpawnEgg(material))

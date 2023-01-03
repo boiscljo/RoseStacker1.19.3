@@ -112,9 +112,8 @@ public class InteractListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInteractEntity(PlayerInteractEntityEvent event) {
-        if (!(event.getRightClicked() instanceof LivingEntity entity))
-            return;
-
+        org.bukkit.entity.Entity entity = event.getRightClicked();
+       
         StackManager stackManager = this.rosePlugin.getManager(StackManager.class);
         if (stackManager.isWorldDisabled(event.getPlayer().getWorld()))
             return;
@@ -179,9 +178,14 @@ public class InteractListener implements Listener {
         if (!ItemUtils.isSpawnEgg(itemStack.getType()) || !ItemUtils.hasStoredStackSize(itemStack))
             return false;
 
+        System.out.println("181:"+itemStack.getType());
         int spawnAmount = ItemUtils.getStackedItemStackAmount(itemStack);
+        System.out.println("183:"+spawnAmount);
+        System.out.println("184:");
         EntityStackSettings stackSettings = this.rosePlugin.getManager(StackSettingManager.class).getEntityStackSettings(itemStack.getType());
         EntityType entityType = stackSettings.getEntityType();
+        System.out.println("187:"+entityType);
+
         if (original != null && original.getType() != entityType)
             return false;
 
@@ -191,6 +195,7 @@ public class InteractListener implements Listener {
         StackManager stackManager = this.rosePlugin.getManager(StackManager.class);
         if (stackManager.isWorldDisabled(spawnLocation.getWorld()))
             return false;
+        System.out.println("198:"+entityType+","+spawnAmount+","+spawnLocation);
 
         stackManager.preStackEntities(entityType, spawnAmount, spawnLocation, SpawnReason.SPAWNER_EGG);
 

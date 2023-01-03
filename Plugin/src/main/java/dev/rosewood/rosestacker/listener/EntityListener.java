@@ -81,8 +81,7 @@ public class EntityListener implements Listener {
             SpawnReason.BEEHIVE,
             SpawnReason.BUILD_IRONGOLEM,
             SpawnReason.BUILD_SNOWMAN,
-            SpawnReason.BUILD_WITHER
-    );
+            SpawnReason.BUILD_WITHER);
 
     private final RosePlugin rosePlugin;
     private final StackManager stackManager;
@@ -118,7 +117,7 @@ public class EntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
-        LivingEntity entity = event.getEntity();
+        org.bukkit.entity.Entity entity = event.getEntity();
         if (this.stackManager.isWorldDisabled(entity.getWorld()))
             return;
 
@@ -129,7 +128,8 @@ public class EntityListener implements Listener {
             PersistentDataUtils.setEntitySpawnReason(entity, event.getSpawnReason());
             this.entityCacheManager.preCacheEntity(entity);
 
-            // Try to immediately stack everything except bees from hives and built entities due to them duplicating
+            // Try to immediately stack everything except bees from hives and built entities
+            // due to them duplicating
             this.stackManager.createEntityStack(entity, !DELAYED_SPAWN_REASONS.contains(event.getSpawnReason()));
 
             PersistentDataUtils.applyDisabledAi(entity);
@@ -145,8 +145,8 @@ public class EntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSpawnerSpawn(SpawnerSpawnEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity entity))
-            return;
+
+        org.bukkit.entity.Entity entity = event.getEntity();
 
         StackManager stackManager = this.rosePlugin.getManager(StackManager.class);
         if (stackManager.isWorldDisabled(event.getEntity().getWorld()))
@@ -159,27 +159,33 @@ public class EntityListener implements Listener {
             stackedSpawner = stackManager.createSpawnerStack(event.getSpawner().getBlock(), 1, false);
 
         boolean placedByPlayer = stackedSpawner != null && stackedSpawner.isPlacedByPlayer();
-        if (stackSettings.isMobAIDisabled() && (!Setting.SPAWNER_DISABLE_MOB_AI_ONLY_PLAYER_PLACED.getBoolean() || placedByPlayer))
+        if (stackSettings.isMobAIDisabled()
+                && (!Setting.SPAWNER_DISABLE_MOB_AI_ONLY_PLAYER_PLACED.getBoolean() || placedByPlayer))
             PersistentDataUtils.removeEntityAi(entity);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityTarget(EntityTargetEvent event) {
-        // Withers can still target enitites due to custom boss AI, so prevent them from targeting when AI is disabled
+        // Withers can still target enitites due to custom boss AI, so prevent them from
+        // targeting when AI is disabled
         Entity entity = event.getEntity();
         if (!(entity instanceof LivingEntity))
             return;
 
-        boolean disableAttacking = (event.getEntityType() == EntityType.WITHER && PersistentDataUtils.isAiDisabled((Wither) event.getEntity()))
-                || (Setting.SPAWNER_DISABLE_ATTACKING.getBoolean()) && PersistentDataUtils.isSpawnedFromSpawner((LivingEntity) event.getEntity());
+        boolean disableAttacking = (event.getEntityType() == EntityType.WITHER
+                && PersistentDataUtils.isAiDisabled((Wither) event.getEntity()))
+                || (Setting.SPAWNER_DISABLE_ATTACKING.getBoolean())
+                        && PersistentDataUtils.isSpawnedFromSpawner((org.bukkit.entity.Entity) event.getEntity());
         if (disableAttacking)
             event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityTeleport(EntityTeleportEvent event) {
-        // Endermen can still target enitites due to custom dodging AI, so prevent them from teleporting when AI is disabled
-        if (event.getEntityType() == EntityType.ENDERMAN && PersistentDataUtils.isAiDisabled((Enderman) event.getEntity()))
+        // Endermen can still target enitites due to custom dodging AI, so prevent them
+        // from teleporting when AI is disabled
+        if (event.getEntityType() == EntityType.ENDERMAN
+                && PersistentDataUtils.isAiDisabled((Enderman) event.getEntity()))
             event.setCancelled(true);
     }
 
@@ -198,7 +204,8 @@ public class EntityListener implements Listener {
 
             StackedEntity stackedEntity = this.stackManager.getStackedEntity(livingEntity);
             if (stackedEntity != null) {
-                this.stackManager.changeStackingThread(livingEntity.getUniqueId(), stackedEntity, event.getFrom().getWorld(), event.getTo().getWorld());
+                this.stackManager.changeStackingThread(livingEntity.getUniqueId(), stackedEntity,
+                        event.getFrom().getWorld(), event.getTo().getWorld());
                 stackedEntity.updateDisplay();
             }
         } else if (entity instanceof Item item) {
@@ -207,7 +214,8 @@ public class EntityListener implements Listener {
 
             StackedItem stackedItem = this.stackManager.getStackedItem(item);
             if (stackedItem != null) {
-                this.stackManager.changeStackingThread(item.getUniqueId(), stackedItem, event.getFrom().getWorld(), event.getTo().getWorld());
+                this.stackManager.changeStackingThread(item.getUniqueId(), stackedItem, event.getFrom().getWorld(),
+                        event.getTo().getWorld());
                 stackedItem.updateDisplay();
             }
         }
@@ -218,31 +226,36 @@ public class EntityListener implements Listener {
         // Prevent guardians with disabled AI from spiking their attacker
         if (event.getEntity().getType() == EntityType.PLAYER
                 && (event.getDamager() instanceof Guardian || event.getDamager() instanceof Slime)
-                && PersistentDataUtils.isAiDisabled((LivingEntity) event.getDamager())) {
+                && PersistentDataUtils.isAiDisabled((org.bukkit.entity.Entity) event.getDamager())) {
             event.setCancelled(true);
         }
 
-        if (!(event.getEntity() instanceof LivingEntity entity) || event.getEntity().getType() == EntityType.PLAYER)
+        if (event.getEntity().getType() == EntityType.PLAYER)
             return;
-
-        if (!Setting.ENTITY_INSTANT_KILL_DISABLED_AI.getBoolean() || this.stackManager.isWorldDisabled(entity.getWorld()) || !PersistentDataUtils.isAiDisabled(entity))
+        org.bukkit.entity.Entity entity = event.getEntity();
+        if (!Setting.ENTITY_INSTANT_KILL_DISABLED_AI.getBoolean()
+                || this.stackManager.isWorldDisabled(entity.getWorld()) || !PersistentDataUtils.isAiDisabled(entity))
             return;
 
         Entity damager = event.getDamager();
-        if ((damager instanceof Projectile projectile && !(projectile.getShooter() instanceof Player)) || !(damager instanceof Player))
+        if ((damager instanceof Projectile projectile && !(projectile.getShooter() instanceof Player))
+                || !(damager instanceof Player))
             return;
-
-        AttributeInstance attributeInstance = entity.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        if (attributeInstance != null) {
-            event.setDamage(attributeInstance.getValue() * 2);
-        } else {
-            event.setDamage(entity.getHealth() * 2);
+        if (entity instanceof LivingEntity living) {
+            AttributeInstance attributeInstance = living.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+            if (attributeInstance != null) {
+                event.setDamage(attributeInstance.getValue() * 2);
+            } else {
+                event.setDamage(living.getHealth() * 2);
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity entity) || event.getEntity().getType() == EntityType.ARMOR_STAND || event.getEntity().getType() == EntityType.PLAYER)
+        org.bukkit.entity.Entity entity = event.getEntity();
+        if (event.getEntity().getType() == EntityType.ARMOR_STAND
+                || event.getEntity().getType() == EntityType.PLAYER)
             return;
 
         if (this.stackManager.isWorldDisabled(entity.getWorld()))
@@ -260,42 +273,49 @@ public class EntityListener implements Listener {
 
         double damage = event.getFinalDamage();
 
-        List<LivingEntity> killedEntities = stackedEntity.getDataStorage().removeIf(internal -> {
-            if (internal.getHealth() - damage <= 0) {
-                return true; // Don't set the health below 0, as that will trigger the death event which we want to avoid
-            } else {
-                internal.setHealth(internal.getHealth() - damage);
-                return false;
+        List<Entity> killedEntities = stackedEntity.getDataStorage().removeIf(internal -> {
+            if (internal instanceof LivingEntity living) {
+                if (living.getHealth() - damage <= 0) {
+                    return true; // Don't set the health below 0, as that will trigger the death event which we
+                                 // want to avoid
+                } else {
+                    living.setHealth(living.getHealth() - damage);
+                    return false;
+                }
             }
+            return true;
         });
 
         // Only try dropping loot if something actually died
         if (!killedEntities.isEmpty()) {
-            stackedEntity.dropPartialStackLoot(killedEntities, 1, new ArrayList<>(), EntityUtils.getApproximateExperience(stackedEntity.getStackSettings().getEntityType().getEntityClass()));
+            stackedEntity.dropPartialStackLoot(killedEntities, 1, new ArrayList<>(), EntityUtils
+                    .getApproximateExperience(stackedEntity.getStackSettings().getEntityType().getEntityClass()));
 
-            Player killer = entity.getKiller();
-            if (killer != null && killedEntities.size() - 1 > 0)
-                killer.incrementStatistic(Statistic.KILL_ENTITY, entity.getType(), killedEntities.size() - 1);
+            if (entity instanceof LivingEntity living) {
+                Player killer = living.getKiller();
+                if (killer != null && killedEntities.size() - 1 > 0)
+                    killer.incrementStatistic(Statistic.KILL_ENTITY, entity.getType(), killedEntities.size() - 1);
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityCombust(EntityCombustEvent event) {
         Entity entity = event.getEntity();
-        if (event instanceof EntityCombustByBlockEvent || event instanceof EntityCombustByEntityEvent || !(entity instanceof LivingEntity))
+        if (event instanceof EntityCombustByBlockEvent || event instanceof EntityCombustByEntityEvent
+                || !(entity instanceof LivingEntity))
             return;
 
         // Don't allow mobs to naturally burn in the daylight if their AI is disabled
-        if (PersistentDataUtils.isAiDisabled((LivingEntity) entity) && !Setting.SPAWNER_DISABLE_MOB_AI_OPTIONS_UNDEAD_BURN_IN_DAYLIGHT.getBoolean())
+        if (PersistentDataUtils.isAiDisabled((org.bukkit.entity.Entity) entity)
+                && !Setting.SPAWNER_DISABLE_MOB_AI_OPTIONS_UNDEAD_BURN_IN_DAYLIGHT.getBoolean())
             event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent event) {
-        if (!(event.getEntity() instanceof LivingEntity))
-            return;
-
-        this.handleEntityDeath(null, (LivingEntity) event.getEntity());
+        if (event.getEntity() instanceof LivingEntity living)
+            this.handleEntityDeath(null, living);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -304,7 +324,7 @@ public class EntityListener implements Listener {
             this.handleEntityDeath(event, event.getEntity());
     }
 
-    private void handleEntityDeath(EntityDeathEvent event, LivingEntity entity) {
+    private void handleEntityDeath(EntityDeathEvent event, org.bukkit.entity.Entity entity) {
         if (this.stackManager.isWorldDisabled(entity.getWorld()))
             return;
 
@@ -332,16 +352,22 @@ public class EntityListener implements Listener {
             if (Setting.ENTITY_MULTIKILL_ENABLED.getBoolean()) {
                 int multikillAmount = Setting.ENTITY_MULTIKILL_AMOUNT.getInt();
                 int killAmount = 1;
-
-                if (!Setting.ENTITY_MULTIKILL_PLAYER_ONLY.getBoolean() || entity.getKiller() != null) {
+                LivingEntity living=null;
+                if (entity instanceof LivingEntity living_)
+                    living = living_;
+                if (!Setting.ENTITY_MULTIKILL_PLAYER_ONLY.getBoolean()
+                        || (living != null && living.getKiller() != null)) {
                     if (Setting.ENTITY_MULTIKILL_ENCHANTMENT_ENABLED.getBoolean()) {
-                        Enchantment requiredEnchantment = Enchantment.getByKey(NamespacedKey.fromString(Setting.ENTITY_MULTIKILL_ENCHANTMENT_TYPE.getString()));
+                        Enchantment requiredEnchantment = Enchantment.getByKey(
+                                NamespacedKey.fromString(Setting.ENTITY_MULTIKILL_ENCHANTMENT_TYPE.getString()));
                         if (requiredEnchantment == null) {
                             // Only decrease stack size by 1 and print a warning to the console
-                            RoseStacker.getInstance().getLogger().warning("Invalid multikill enchantment type: " + Setting.ENTITY_MULTIKILL_ENCHANTMENT_TYPE.getString());
+                            RoseStacker.getInstance().getLogger().warning("Invalid multikill enchantment type: "
+                                    + Setting.ENTITY_MULTIKILL_ENCHANTMENT_TYPE.getString());
                         } else if (event != null && event.getEntity().getKiller() != null) {
                             Player killer = event.getEntity().getKiller();
-                            int enchantmentLevel = killer.getInventory().getItemInMainHand().getEnchantmentLevel(requiredEnchantment);
+                            int enchantmentLevel = killer.getInventory().getItemInMainHand()
+                                    .getEnchantmentLevel(requiredEnchantment);
                             if (enchantmentLevel > 0)
                                 killAmount = multikillAmount * enchantmentLevel;
                         }
@@ -393,20 +419,22 @@ public class EntityListener implements Listener {
             return;
 
         if (event.getEntity() instanceof Slime) {
-            if (PersistentDataUtils.isAiDisabled((LivingEntity) event.getEntity()))
-                event.getTransformedEntities().stream().map(x -> (Slime) x).forEach(PersistentDataUtils::removeEntityAi);
-            if (PersistentDataUtils.isSpawnedFromSpawner((LivingEntity) event.getEntity()))
-                event.getTransformedEntities().stream().map(x -> (Slime) x).forEach(PersistentDataUtils::tagSpawnedFromSpawner);
+            if (PersistentDataUtils.isAiDisabled((org.bukkit.entity.Entity) event.getEntity()))
+                event.getTransformedEntities().stream().map(x -> (Slime) x)
+                        .forEach(PersistentDataUtils::removeEntityAi);
+            if (PersistentDataUtils.isSpawnedFromSpawner((org.bukkit.entity.Entity) event.getEntity()))
+                event.getTransformedEntities().stream().map(x -> (Slime) x)
+                        .forEach(PersistentDataUtils::tagSpawnedFromSpawner);
             return;
         }
 
         if (!(event.getEntity() instanceof LivingEntity)
                 || !(event.getTransformedEntity() instanceof LivingEntity transformedEntity)
                 || event.getEntity().getType() == event.getTransformedEntity().getType()
-                || !this.stackManager.isEntityStacked((LivingEntity) event.getEntity()))
+                || !this.stackManager.isEntityStacked((org.bukkit.entity.Entity) event.getEntity()))
             return;
 
-        StackedEntity stackedEntity = this.stackManager.getStackedEntity((LivingEntity) event.getEntity());
+        StackedEntity stackedEntity = this.stackManager.getStackedEntity((org.bukkit.entity.Entity) event.getEntity());
         if (stackedEntity.getStackSize() == 1)
             return;
 
@@ -420,17 +448,22 @@ public class EntityListener implements Listener {
                 MushroomCowStackSettings stackSettings = (MushroomCowStackSettings) stackedEntity.getStackSettings();
                 int mushroomsDropped = 5;
                 if (stackSettings.shouldDropAdditionalMushroomsPerCowInStack())
-                    mushroomsDropped += (stackedEntity.getStackSize() - 1) * stackSettings.getExtraMushroomsPerCowInStack();
+                    mushroomsDropped += (stackedEntity.getStackSize() - 1)
+                            * stackSettings.getExtraMushroomsPerCowInStack();
 
-                Material dropType = ((MushroomCow) event.getEntity()).getVariant() == Variant.BROWN ? Material.BROWN_MUSHROOM : Material.RED_MUSHROOM;
-                this.stackManager.preStackItems(GuiUtil.getMaterialAmountAsItemStacks(dropType, mushroomsDropped), event.getEntity().getLocation());
+                Material dropType = ((MushroomCow) event.getEntity()).getVariant() == Variant.BROWN
+                        ? Material.BROWN_MUSHROOM
+                        : Material.RED_MUSHROOM;
+                this.stackManager.preStackItems(GuiUtil.getMaterialAmountAsItemStacks(dropType, mushroomsDropped),
+                        event.getEntity().getLocation());
             }
 
-            boolean aiDisabled = PersistentDataUtils.isAiDisabled((LivingEntity) event.getEntity());
+            boolean aiDisabled = PersistentDataUtils.isAiDisabled((org.bukkit.entity.Entity) event.getEntity());
             event.getEntity().remove();
             ThreadUtils.runSync(() -> {
                 this.stackManager.setEntityStackingTemporarilyDisabled(true);
-                LivingEntity newEntity = nmsHandler.createEntityFromNBT(serialized, transformedEntity.getLocation(), true, transformedEntity.getType());
+                org.bukkit.entity.Entity newEntity = nmsHandler.createEntityFromNBT(serialized,
+                        transformedEntity.getLocation(), true, transformedEntity.getType());
                 if (aiDisabled)
                     PersistentDataUtils.removeEntityAi(newEntity);
                 StackedEntity newStack = this.stackManager.createEntityStack(newEntity, false);
@@ -447,8 +480,8 @@ public class EntityListener implements Listener {
             });
         } else {
             // Make sure disabled AI gets transferred
-            if (PersistentDataUtils.isAiDisabled((LivingEntity) event.getEntity()))
-                PersistentDataUtils.removeEntityAi((LivingEntity) event.getTransformedEntity());
+            if (PersistentDataUtils.isAiDisabled((org.bukkit.entity.Entity) event.getEntity()))
+                PersistentDataUtils.removeEntityAi((org.bukkit.entity.Entity) event.getTransformedEntity());
 
             if (event.getTransformReason() == TransformReason.LIGHTNING) { // Wait for lightning to disappear
                 ThreadUtils.runSyncDelayed(stackedEntity::decreaseStackSize, 20);
@@ -519,7 +552,8 @@ public class EntityListener implements Listener {
             try {
                 stackedEntity.getDataStorage().forEach(internal -> {
                     Sheep sheep = (Sheep) internal;
-                    if (!sheep.isSheared() || stackManager.getEntityDataStorageType() == StackedEntityDataStorageType.SIMPLE) {
+                    if (!sheep.isSheared()
+                            || stackManager.getEntityDataStorageType() == StackedEntityDataStorageType.SIMPLE) {
                         sheep.setSheared(true);
                         drops.add(new ItemStack(ItemUtils.getWoolMaterial(sheep.getColor()), getWoolDropAmount()));
                     }

@@ -38,6 +38,7 @@ import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.profile.PlayerProfile;
 import org.jetbrains.annotations.ApiStatus;
 
 public final class ItemUtils {
@@ -114,14 +115,15 @@ public final class ItemUtils {
 
         GameProfile profile = new GameProfile(UUID.randomUUID(), null);
         profile.getProperties().put("textures", new Property("textures", texture));
-
+        
         try {
             if (field_SkullMeta_profile == null) {
                 field_SkullMeta_profile = skullMeta.getClass().getDeclaredField("profile");
                 field_SkullMeta_profile.setAccessible(true);
             }
-
-            field_SkullMeta_profile.set(skullMeta, profile);
+            //MAGMA: This break the server somehow, so temporarely disabled unless we can find a solution
+            //field_SkullMeta_profile.set(skullMeta, profile);
+            
         } catch (ReflectiveOperationException ex) {
             ex.printStackTrace();
         }
@@ -213,6 +215,8 @@ public final class ItemUtils {
     public static ItemStack getEntityAsStackedItemStack(EntityType entityType, int amount) {
         EntityStackSettings stackSettings = RoseStacker.getInstance().getManager(StackSettingManager.class).getEntityStackSettings(entityType);
         Material spawnEggMaterial = stackSettings.getEntityTypeData().getSpawnEggMaterial();
+        System.out.println("218:"+entityType);
+        System.out.println("219:"+spawnEggMaterial);
         if (spawnEggMaterial == null)
             return null;
 
@@ -239,7 +243,7 @@ public final class ItemUtils {
         // Set stack size
         NMSHandler nmsHandler = NMSAdapter.getHandler();
         itemStack = nmsHandler.setItemStackNBT(itemStack, "StackSize", amount);
-
+        System.out.println("246:"+nmsHandler.getItemStackNBTInt(itemStack,"StackSize"));
         return itemStack;
     }
 

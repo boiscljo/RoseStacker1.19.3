@@ -100,42 +100,57 @@ public class NMSHandlerImpl implements NMSHandler {
 
     private static Method method_WorldServer_registerEntity; // Method to register an entity into a world
 
-    private static DataWatcherObject<Boolean> value_EntityCreeper_d; // DataWatcherObject that determines if a creeper is ignited, normally private
-    private static Field field_EntityCreeper_fuseTicks; // Field to set the remaining fuse ticks of a creeper, normally private
+    private static DataWatcherObject<Boolean> value_EntityCreeper_d; // DataWatcherObject that determines if a creeper
+                                                                     // is ignited, normally private
+    private static Field field_EntityCreeper_fuseTicks; // Field to set the remaining fuse ticks of a creeper, normally
+                                                        // private
 
-    private static Field field_PathfinderGoalSelector_d; // Field to get a PathfinderGoalSelector of an insentient entity, normally private
-    private static Field field_EntityInsentient_lookController; // Field to get the look controller of an insentient entity, normally protected
-    private static Field field_EntityInsentient_moveController; // Field to get the move controller of an insentient entity, normally protected
-    private static Field field_EntityInsentient_jumpController; // Field to get the jump controller of an insentient entity, normally protected
-    private static Field field_EntityLiving_behaviorController; // Field to get the behavior controller of a living entity, normally protected
+    private static Field field_PathfinderGoalSelector_d; // Field to get a PathfinderGoalSelector of an insentient
+                                                         // entity, normally private
+    private static Field field_EntityInsentient_lookController; // Field to get the look controller of an insentient
+                                                                // entity, normally protected
+    private static Field field_EntityInsentient_moveController; // Field to get the move controller of an insentient
+                                                                // entity, normally protected
+    private static Field field_EntityInsentient_jumpController; // Field to get the jump controller of an insentient
+                                                                // entity, normally protected
+    private static Field field_EntityLiving_behaviorController; // Field to get the behavior controller of a living
+                                                                // entity, normally protected
 
-    private static Field field_Entity_spawnReason; // Spawn reason field (only on Paper servers, will be null for Spigot)
+    private static Field field_Entity_spawnReason; // Spawn reason field (only on Paper servers, will be null for
+                                                   // Spigot)
     private static AtomicInteger entityCounter; // Atomic integer to generate unique entity IDs, normally private
 
     private static Unsafe unsafe;
-    private static long field_SpawnerBlockEntity_spawner_offset; // Field offset for modifying SpawnerBlockEntity's spawner field
+    private static long field_SpawnerBlockEntity_spawner_offset; // Field offset for modifying SpawnerBlockEntity's
+                                                                 // spawner field
 
-    private static Field field_AbstractVillager_offers; // Field to get the offers of an AbstractVillager, normally private
+    private static Field field_AbstractVillager_offers; // Field to get the offers of an AbstractVillager, normally
+                                                        // private
 
     static {
         try {
-            method_WorldServer_registerEntity = ReflectionUtils.getMethodByName(WorldServer.class, "registerEntity", Entity.class);
+            method_WorldServer_registerEntity = ReflectionUtils.getMethodByName(WorldServer.class, "registerEntity",
+                    Entity.class);
 
             Field field_EntityCreeper_d = ReflectionUtils.getFieldByName(EntityCreeper.class, "d");
             value_EntityCreeper_d = (DataWatcherObject<Boolean>) field_EntityCreeper_d.get(null);
             field_EntityCreeper_fuseTicks = ReflectionUtils.getFieldByName(EntityCreeper.class, "fuseTicks");
 
             field_PathfinderGoalSelector_d = ReflectionUtils.getFieldByName(PathfinderGoalSelector.class, "d");
-            field_EntityInsentient_lookController = ReflectionUtils.getFieldByName(EntityInsentient.class, "lookController");
-            field_EntityInsentient_moveController = ReflectionUtils.getFieldByName(EntityInsentient.class, "moveController");
+            field_EntityInsentient_lookController = ReflectionUtils.getFieldByName(EntityInsentient.class,
+                    "lookController");
+            field_EntityInsentient_moveController = ReflectionUtils.getFieldByName(EntityInsentient.class,
+                    "moveController");
             field_EntityInsentient_jumpController = ReflectionUtils.getFieldByName(EntityInsentient.class, "bi");
             field_EntityLiving_behaviorController = ReflectionUtils.getFieldByName(EntityLiving.class, "bg");
 
             if (NMSAdapter.isPaper())
-                field_Entity_spawnReason = ReflectionUtils.getFieldByPositionAndType(Entity.class, 0, SpawnReason.class);
+                field_Entity_spawnReason = ReflectionUtils.getFieldByPositionAndType(Entity.class, 0,
+                        SpawnReason.class);
             entityCounter = (AtomicInteger) ReflectionUtils.getFieldByName(Entity.class, "entityCount").get(null);
 
-            Field field_SpawnerBlockEntity_spawner = ReflectionUtils.getFieldByPositionAndType(TileEntityMobSpawner.class, 0, MobSpawnerAbstract.class);
+            Field field_SpawnerBlockEntity_spawner = ReflectionUtils
+                    .getFieldByPositionAndType(TileEntityMobSpawner.class, 0, MobSpawnerAbstract.class);
             Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
             unsafeField.setAccessible(true);
             unsafe = (Unsafe) unsafeField.get(null);
@@ -148,7 +163,7 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public StackedEntityDataEntry<?> getEntityAsNBT(LivingEntity livingEntity) {
+    public StackedEntityDataEntry<?> getEntityAsNBT(org.bukkit.entity.Entity livingEntity) {
         NBTTagCompound nbt = new NBTTagCompound();
         EntityLiving nmsEntity = ((CraftLivingEntity) livingEntity).getHandle();
         nmsEntity.save(nbt);
@@ -164,7 +179,8 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public LivingEntity createEntityFromNBT(StackedEntityDataEntry<?> serialized, Location location, boolean addToWorld, EntityType entityType) {
+    public org.bukkit.entity.Entity createEntityFromNBT(StackedEntityDataEntry<?> serialized, Location location, boolean addToWorld,
+            EntityType entityType) {
         try {
             NBTTagCompound nbt = (NBTTagCompound) serialized.get();
 
@@ -194,8 +210,7 @@ public class NMSHandlerImpl implements NMSHandler {
                         null,
                         null,
                         new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ()),
-                        EnumMobSpawn.COMMAND
-                );
+                        EnumMobSpawn.COMMAND);
 
                 if (entity == null)
                     throw new NullPointerException("Unable to create entity from NBT");
@@ -204,7 +219,8 @@ public class NMSHandlerImpl implements NMSHandler {
                 entity.load(nbt);
 
                 if (addToWorld) {
-                    IChunkAccess ichunkaccess = world.getChunkAt(MathHelper.floor(entity.locX() / 16.0D), MathHelper.floor(entity.locZ() / 16.0D), ChunkStatus.FULL, true);
+                    IChunkAccess ichunkaccess = world.getChunkAt(MathHelper.floor(entity.locX() / 16.0D),
+                            MathHelper.floor(entity.locZ() / 16.0D), ChunkStatus.FULL, true);
                     if (!(ichunkaccess instanceof Chunk))
                         throw new NullPointerException("Unable to spawn entity from NBT, couldn't get chunk");
 
@@ -213,7 +229,7 @@ public class NMSHandlerImpl implements NMSHandler {
                     entity.noDamageTicks = 0;
                 }
 
-                return (LivingEntity) entity.getBukkitEntity();
+                return entity.getBukkitEntity();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -223,16 +239,17 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public LivingEntity createNewEntityUnspawned(EntityType entityType, Location location, SpawnReason spawnReason) {
+    public org.bukkit.entity.Entity createNewEntityUnspawned(EntityType entityType, Location location, SpawnReason spawnReason) {
         World world = location.getWorld();
         if (world == null)
             return null;
 
         Class<? extends org.bukkit.entity.Entity> entityClass = entityType.getEntityClass();
-        if (entityClass == null || !LivingEntity.class.isAssignableFrom(entityClass))
+        if (entityClass == null || !org.bukkit.entity.Entity.class.isAssignableFrom(entityClass))
             throw new IllegalArgumentException("EntityType must be of a LivingEntity");
 
-        EntityTypes<? extends Entity> nmsEntityType = IRegistry.ENTITY_TYPE.get(CraftNamespacedKey.toMinecraft(entityType.getKey()));
+        EntityTypes<? extends Entity> nmsEntityType = IRegistry.ENTITY_TYPE
+                .get(CraftNamespacedKey.toMinecraft(entityType.getKey()));
         Entity nmsEntity = this.createCreature(
                 nmsEntityType,
                 ((CraftWorld) world).getHandle(),
@@ -240,17 +257,20 @@ public class NMSHandlerImpl implements NMSHandler {
                 null,
                 null,
                 new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ()),
-                this.toNmsSpawnReason(spawnReason)
-        );
+                this.toNmsSpawnReason(spawnReason));
 
-        return nmsEntity == null ? null : (LivingEntity) nmsEntity.getBukkitEntity();
+        return nmsEntity == null ? null : nmsEntity.getBukkitEntity();
     }
 
     /**
-     * Duplicate of {@link EntityTypes#createCreature(WorldServer, NBTTagCompound, IChatBaseComponent, EntityHuman, BlockPosition, EnumMobSpawn, boolean, boolean)}.
-     * Contains a patch to prevent chicken jockeys from spawning and to not play the mob sound upon creation.
+     * Duplicate of
+     * {@link EntityTypes#createCreature(WorldServer, NBTTagCompound, IChatBaseComponent, EntityHuman, BlockPosition, EnumMobSpawn, boolean, boolean)}.
+     * Contains a patch to prevent chicken jockeys from spawning and to not play the
+     * mob sound upon creation.
      */
-    private <T extends Entity> T createCreature(EntityTypes<T> entityTypes, WorldServer worldserver, NBTTagCompound nbttagcompound, IChatBaseComponent ichatbasecomponent, EntityHuman entityhuman, BlockPosition blockposition, EnumMobSpawn enummobspawn) {
+    private <T extends Entity> T createCreature(EntityTypes<T> entityTypes, WorldServer worldserver,
+            NBTTagCompound nbttagcompound, IChatBaseComponent ichatbasecomponent, EntityHuman entityhuman,
+            BlockPosition blockposition, EnumMobSpawn enummobspawn) {
         T newEntity;
         if (entityTypes == EntityTypes.SPIDER) {
             newEntity = (T) new SoloEntitySpider((EntityTypes<? extends EntitySpider>) entityTypes, worldserver);
@@ -266,10 +286,12 @@ public class NMSHandlerImpl implements NMSHandler {
             if (field_Entity_spawnReason != null) {
                 try {
                     field_Entity_spawnReason.set(newEntity, this.toBukkitSpawnReason(enummobspawn));
-                } catch (IllegalAccessException ignored) { }
+                } catch (IllegalAccessException ignored) {
+                }
             }
 
-            newEntity.setPositionRotation(blockposition.getX() + 0.5D, blockposition.getY(), blockposition.getZ() + 0.5D, MathHelper.g(worldserver.random.nextFloat() * 360.0F), 0.0F);
+            newEntity.setPositionRotation(blockposition.getX() + 0.5D, blockposition.getY(),
+                    blockposition.getZ() + 0.5D, MathHelper.g(worldserver.random.nextFloat() * 360.0F), 0.0F);
             if (newEntity instanceof EntityInsentient entityinsentient) {
                 entityinsentient.aC = entityinsentient.yaw;
                 entityinsentient.aA = entityinsentient.yaw;
@@ -284,7 +306,9 @@ public class NMSHandlerImpl implements NMSHandler {
                     groupDataEntity = new EntityZombie.GroupDataZombie(EntityZombie.a(worldserver.getRandom()), false);
                 }
 
-                entityinsentient.prepare(worldserver, worldserver.getDamageScaler(entityinsentient.getChunkCoordinates()), enummobspawn, groupDataEntity, nbttagcompound);
+                entityinsentient.prepare(worldserver,
+                        worldserver.getDamageScaler(entityinsentient.getChunkCoordinates()), enummobspawn,
+                        groupDataEntity, nbttagcompound);
             }
 
             if (ichatbasecomponent != null && newEntity instanceof EntityLiving) {
@@ -293,21 +317,24 @@ public class NMSHandlerImpl implements NMSHandler {
 
             try {
                 EntityTypes.a(worldserver, entityhuman, newEntity, nbttagcompound);
-            } catch (Throwable ignored) { }
+            } catch (Throwable ignored) {
+            }
 
             return newEntity;
         }
     }
 
     @Override
-    public void spawnExistingEntity(LivingEntity entity, SpawnReason spawnReason, boolean bypassSpawnEvent) {
+    public void spawnExistingEntity(org.bukkit.entity.Entity entity, SpawnReason spawnReason, boolean bypassSpawnEvent) {
         Location location = entity.getLocation();
         World world = location.getWorld();
         if (world == null)
             throw new IllegalArgumentException("Entity is not in a loaded world");
 
         if (bypassSpawnEvent) {
-            IChunkAccess ichunkaccess = ((CraftWorld) world).getHandle().getChunkAt(MathHelper.floor(entity.getLocation().getX() / 16.0D), MathHelper.floor(entity.getLocation().getZ() / 16.0D), ChunkStatus.FULL, false);
+            IChunkAccess ichunkaccess = ((CraftWorld) world).getHandle().getChunkAt(
+                    MathHelper.floor(entity.getLocation().getX() / 16.0D),
+                    MathHelper.floor(entity.getLocation().getZ() / 16.0D), ChunkStatus.FULL, false);
             if (!(ichunkaccess instanceof Chunk))
                 return;
 
@@ -319,14 +346,17 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void updateEntityNameTagForPlayer(Player player, org.bukkit.entity.Entity entity, String customName, boolean customNameVisible) {
+    public void updateEntityNameTagForPlayer(Player player, org.bukkit.entity.Entity entity, String customName,
+            boolean customNameVisible) {
         try {
             List<DataWatcher.Item<?>> dataWatchers = new ArrayList<>();
-            Optional<IChatBaseComponent> nameComponent = Optional.ofNullable(CraftChatMessage.fromStringOrNull(customName));
+            Optional<IChatBaseComponent> nameComponent = Optional
+                    .ofNullable(CraftChatMessage.fromStringOrNull(customName));
             dataWatchers.add(new DataWatcher.Item<>(DataWatcherRegistry.f.a(2), nameComponent));
             dataWatchers.add(new DataWatcher.Item<>(DataWatcherRegistry.i.a(3), customNameVisible));
 
-            PacketPlayOutEntityMetadata packetPlayOutEntityMetadata = new PacketPlayOutEntityMetadata(entity.getEntityId(), new DataWatcherWrapper(dataWatchers), false);
+            PacketPlayOutEntityMetadata packetPlayOutEntityMetadata = new PacketPlayOutEntityMetadata(
+                    entity.getEntityId(), new DataWatcherWrapper(dataWatchers), false);
             ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packetPlayOutEntityMetadata);
         } catch (Exception e) {
             e.printStackTrace();
@@ -334,10 +364,13 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void updateEntityNameTagVisibilityForPlayer(Player player, org.bukkit.entity.Entity entity, boolean customNameVisible) {
+    public void updateEntityNameTagVisibilityForPlayer(Player player, org.bukkit.entity.Entity entity,
+            boolean customNameVisible) {
         try {
-            List<DataWatcher.Item<?>> dataItems = Lists.newArrayList(new DataWatcher.Item<>(DataWatcherRegistry.i.a(3), customNameVisible));
-            PacketPlayOutEntityMetadata packetPlayOutEntityMetadata = new PacketPlayOutEntityMetadata(entity.getEntityId(), new DataWatcherWrapper(dataItems), false);
+            List<DataWatcher.Item<?>> dataItems = Lists
+                    .newArrayList(new DataWatcher.Item<>(DataWatcherRegistry.i.a(3), customNameVisible));
+            PacketPlayOutEntityMetadata packetPlayOutEntityMetadata = new PacketPlayOutEntityMetadata(
+                    entity.getEntityId(), new DataWatcherWrapper(dataItems), false);
             ((CraftPlayer) player).getHandle().playerConnection.sendPacket(packetPlayOutEntityMetadata);
         } catch (Exception e) {
             e.printStackTrace();
@@ -362,7 +395,7 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void removeEntityGoals(LivingEntity livingEntity) {
+    public void removeEntityGoals(org.bukkit.entity.Entity livingEntity) {
         EntityLiving nmsEntity = ((CraftLivingEntity) livingEntity).getHandle();
         if (!(nmsEntity instanceof EntityInsentient))
             return;
@@ -371,7 +404,8 @@ public class NMSHandlerImpl implements NMSHandler {
             EntityInsentient insentient = (EntityInsentient) nmsEntity;
 
             // Remove all goal AI other than floating in water
-            Set<PathfinderGoalWrapped> goals = (Set<PathfinderGoalWrapped>) field_PathfinderGoalSelector_d.get(insentient.goalSelector);
+            Set<PathfinderGoalWrapped> goals = (Set<PathfinderGoalWrapped>) field_PathfinderGoalSelector_d
+                    .get(insentient.goalSelector);
             Iterator<PathfinderGoalWrapped> goalsIterator = goals.iterator();
             while (goalsIterator.hasNext()) {
                 PathfinderGoalWrapped goal = goalsIterator.next();
@@ -389,17 +423,21 @@ public class NMSHandlerImpl implements NMSHandler {
 
             // Remove controllers
             field_EntityInsentient_lookController.set(insentient, new ControllerLook(insentient) {
-                public void a() { }
+                public void a() {
+                }
             });
             field_EntityInsentient_moveController.set(insentient, new ControllerMove(insentient) {
-                public void a() { }
+                public void a() {
+                }
             });
             if (!(insentient instanceof EntityRabbit)) {
                 field_EntityInsentient_jumpController.set(insentient, new ControllerJump(insentient) {
-                    public void b() { }
+                    public void b() {
+                    }
                 });
             }
-            field_EntityLiving_behaviorController.set(insentient, new BehaviorController(List.of(), List.of(), ImmutableList.of(), () -> BehaviorController.b(List.of(), List.of())));
+            field_EntityLiving_behaviorController.set(insentient, new BehaviorController(List.of(), List.of(),
+                    ImmutableList.of(), () -> BehaviorController.b(List.of(), List.of())));
         } catch (ReflectiveOperationException ex) {
             ex.printStackTrace();
         }
@@ -436,27 +474,32 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void setLastHurtBy(LivingEntity livingEntity, Player player) {
+    public void setLastHurtBy(org.bukkit.entity.Entity livingEntity, Player player) {
         if (player != null)
             ((CraftLivingEntity) livingEntity).getHandle().killer = ((CraftPlayer) player).getHandle();
     }
 
     @Override
-    public boolean hasLineOfSight(LivingEntity entity1, Location location) {
+    public boolean hasLineOfSight(org.bukkit.entity.Entity entity1, Location location) {
         EntityLiving nmsEntity1 = ((CraftLivingEntity) entity1).getHandle();
         Vec3D vec3d = new Vec3D(nmsEntity1.locX(), nmsEntity1.getHeadY(), nmsEntity1.locZ());
         Vec3D target = new Vec3D(location.getX(), location.getY(), location.getZ());
-        return nmsEntity1.world.rayTrace(new RayTrace(vec3d, target, RayTrace.BlockCollisionOption.VISUAL, RayTrace.FluidCollisionOption.NONE, nmsEntity1)).getType() == MovingObjectPosition.EnumMovingObjectType.MISS;
+        return nmsEntity1.world
+                .rayTrace(new RayTrace(vec3d, target, RayTrace.BlockCollisionOption.VISUAL,
+                        RayTrace.FluidCollisionOption.NONE, nmsEntity1))
+                .getType() == MovingObjectPosition.EnumMovingObjectType.MISS;
     }
 
-    public StackedEntityDataStorage createEntityDataStorage(LivingEntity livingEntity, StackedEntityDataStorageType storageType) {
+    public StackedEntityDataStorage createEntityDataStorage(org.bukkit.entity.Entity livingEntity,
+            StackedEntityDataStorageType storageType) {
         return switch (storageType) {
             case NBT -> new NBTStackedEntityDataStorage(livingEntity);
             case SIMPLE -> new SimpleStackedEntityDataStorage(livingEntity);
         };
     }
 
-    public StackedEntityDataStorage deserializeEntityDataStorage(LivingEntity livingEntity, byte[] data, StackedEntityDataStorageType storageType) {
+    public StackedEntityDataStorage deserializeEntityDataStorage(org.bukkit.entity.Entity livingEntity, byte[] data,
+            StackedEntityDataStorageType storageType) {
         return switch (storageType) {
             case NBT -> new NBTStackedEntityDataStorage(livingEntity, data);
             case SIMPLE -> new SimpleStackedEntityDataStorage(livingEntity, data);
@@ -473,7 +516,8 @@ public class NMSHandlerImpl implements NMSHandler {
         if (!(blockEntity instanceof TileEntityMobSpawner spawnerBlockEntity))
             return null;
 
-        StackedSpawnerTile stackedSpawnerTile = new StackedSpawnerTileImpl(spawnerBlockEntity.getSpawner(), spawnerBlockEntity, stackedSpawner);
+        StackedSpawnerTile stackedSpawnerTile = new StackedSpawnerTileImpl(spawnerBlockEntity.getSpawner(),
+                spawnerBlockEntity, stackedSpawner);
         unsafe.putObject(spawnerBlockEntity, field_SpawnerBlockEntity_spawner_offset, stackedSpawnerTile);
         return stackedSpawnerTile;
     }
@@ -499,18 +543,19 @@ public class NMSHandlerImpl implements NMSHandler {
         };
     }
 
-    public void saveEntityToTag(LivingEntity livingEntity, NBTTagCompound compoundTag) {
-        // Async villager "fix", if the trades aren't loaded yet force them to save as empty, they will get loaded later
-        if (livingEntity instanceof AbstractVillager) {
+    public void saveEntityToTag(org.bukkit.entity.Entity livingEntity, NBTTagCompound compoundTag) {
+        // Async villager "fix", if the trades aren't loaded yet force them to save as
+        // empty, they will get loaded later
+        if (livingEntity instanceof AbstractVillager villager_) {
             try {
-                EntityVillagerAbstract villager = ((CraftAbstractVillager) livingEntity).getHandle();
+                EntityVillagerAbstract villager = ((CraftAbstractVillager) villager_).getHandle();
 
-                // Set the trades to empty if they are null to prevent trades from generating during the saveWithoutId call
+                // Set the trades to empty if they are null to prevent trades from generating
+                // during the saveWithoutId call
                 boolean bypassTrades = field_AbstractVillager_offers.get(villager) == null;
                 if (bypassTrades)
                     field_AbstractVillager_offers.set(villager, new MerchantRecipeList());
-
-                ((CraftLivingEntity) livingEntity).getHandle().save(compoundTag);
+                ((CraftEntity) livingEntity).getHandle().save(compoundTag);
 
                 // Restore the offers back to null and make sure nothing is written to the NBT
                 if (bypassTrades) {
@@ -521,7 +566,8 @@ public class NMSHandlerImpl implements NMSHandler {
                 e.printStackTrace();
             }
         } else {
-            ((CraftLivingEntity) livingEntity).getHandle().save(compoundTag);
+            if (livingEntity instanceof LivingEntity living)
+                ((CraftLivingEntity) living).getHandle().save(compoundTag);
         }
     }
 

@@ -67,6 +67,9 @@ shadowJar {
 
     relocate('dev.rosewood.rosegarden', 'dev.rosewood.rosestacker.lib.rosegarden')
     relocate('dev.rosewood.guiframework', 'dev.rosewood.rosestacker.lib.guiframework')
+//      minimize {
+//     exclude(dependency('dev.rosewood:.*:.*'))
+//   }
 }
 
 build.dependsOn shadowJar

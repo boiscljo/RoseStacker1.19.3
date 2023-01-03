@@ -10,6 +10,7 @@ import org.bukkit.Chunk;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Hoglin;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.PiglinAbstract;
@@ -36,28 +37,30 @@ public final class PersistentDataUtils {
         pdc.set(CONVERTED_KEY, PersistentDataType.INTEGER, 1);
     }
 
-    public static void setUnstackable(LivingEntity entity, boolean unstackable) {
+    public static void setUnstackable(org.bukkit.entity.Entity entity, boolean unstackable) {
         RosePlugin rosePlugin = RoseStacker.getInstance();
         if (unstackable) {
-            entity.getPersistentDataContainer().set(new NamespacedKey(rosePlugin, UNSTACKABLE_METADATA_NAME), PersistentDataType.INTEGER, 1);
+            entity.getPersistentDataContainer().set(new NamespacedKey(rosePlugin, UNSTACKABLE_METADATA_NAME),
+                    PersistentDataType.INTEGER, 1);
         } else {
             entity.getPersistentDataContainer().remove(new NamespacedKey(rosePlugin, UNSTACKABLE_METADATA_NAME));
         }
     }
 
-    public static boolean isUnstackable(LivingEntity entity) {
+    public static boolean isUnstackable(org.bukkit.entity.Entity entity) {
         RosePlugin rosePlugin = RoseStacker.getInstance();
-        return entity.getPersistentDataContainer().has(new NamespacedKey(rosePlugin, UNSTACKABLE_METADATA_NAME), PersistentDataType.INTEGER);
+        return entity.getPersistentDataContainer().has(new NamespacedKey(rosePlugin, UNSTACKABLE_METADATA_NAME),
+                PersistentDataType.INTEGER);
     }
 
     /**
      * Sets the spawn reason for the given LivingEntity.
      * Does not overwrite an existing spawn reason.
      *
-     * @param entity The entity to set the spawn reason of
+     * @param entity      The entity to set the spawn reason of
      * @param spawnReason The spawn reason to set
      */
-    public static void setEntitySpawnReason(LivingEntity entity, SpawnReason spawnReason) {
+    public static void setEntitySpawnReason(org.bukkit.entity.Entity entity, SpawnReason spawnReason) {
         RosePlugin rosePlugin = RoseStacker.getInstance();
         PersistentDataContainer dataContainer = entity.getPersistentDataContainer();
         NamespacedKey key = new NamespacedKey(rosePlugin, SPAWN_REASON_METADATA_NAME);
@@ -71,9 +74,10 @@ public final class PersistentDataUtils {
      * @param entity The entity to get the spawn reason of
      * @return The SpawnReason, or SpawnReason.CUSTOM if none is saved
      */
-    public static SpawnReason getEntitySpawnReason(LivingEntity entity) {
+    public static SpawnReason getEntitySpawnReason(org.bukkit.entity.Entity entity) {
         RosePlugin rosePlugin = RoseStacker.getInstance();
-        String reason = entity.getPersistentDataContainer().get(new NamespacedKey(rosePlugin, SPAWN_REASON_METADATA_NAME), PersistentDataType.STRING);
+        String reason = entity.getPersistentDataContainer()
+                .get(new NamespacedKey(rosePlugin, SPAWN_REASON_METADATA_NAME), PersistentDataType.STRING);
         SpawnReason spawnReason;
         if (reason != null) {
             try {
@@ -87,7 +91,7 @@ public final class PersistentDataUtils {
         return spawnReason;
     }
 
-    public static void removeEntityAi(LivingEntity entity) {
+    public static void removeEntityAi(org.bukkit.entity.Entity entity) {
         RosePlugin rosePlugin = RoseStacker.getInstance();
         PersistentDataContainer dataContainer = entity.getPersistentDataContainer();
         NamespacedKey key = new NamespacedKey(rosePlugin, NO_AI_METADATA_NAME);
@@ -97,7 +101,7 @@ public final class PersistentDataUtils {
         applyDisabledAi(entity);
     }
 
-    public static void applyDisabledAi(LivingEntity entity) {
+    public static void applyDisabledAi(Entity entity) {
         if (isAiDisabled(entity) || Setting.ENTITY_DISABLE_ALL_MOB_AI.getBoolean()) {
             if (Setting.SPAWNER_DISABLE_MOB_AI_OPTIONS_REMOVE_GOALS.getBoolean()) {
                 NMSHandler nmsHandler = NMSAdapter.getHandler();
@@ -109,9 +113,11 @@ public final class PersistentDataUtils {
 
             if (Setting.SPAWNER_DISABLE_MOB_AI_OPTIONS_NO_KNOCKBACK.getBoolean()) {
                 // Make the entity unable to take knockback
-                AttributeInstance knockbackAttribute = entity.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
-                if (knockbackAttribute != null)
-                    knockbackAttribute.setBaseValue(Double.MAX_VALUE);
+                if (entity instanceof LivingEntity living) {
+                    AttributeInstance knockbackAttribute = living.getAttribute(Attribute.GENERIC_KNOCKBACK_RESISTANCE);
+                    if (knockbackAttribute != null)
+                        knockbackAttribute.setBaseValue(Double.MAX_VALUE);
+                }
             }
 
             if (Setting.SPAWNER_DISABLE_MOB_AI_OPTIONS_DISABLE_ZOMBIFICATION.getBoolean()) {
@@ -124,28 +130,33 @@ public final class PersistentDataUtils {
         }
     }
 
-    public static boolean isAiDisabled(LivingEntity entity) {
+    public static boolean isAiDisabled(Entity entity) {
         if (Setting.ENTITY_DISABLE_ALL_MOB_AI.getBoolean())
             return true;
 
         RosePlugin rosePlugin = RoseStacker.getInstance();
-        return entity.getPersistentDataContainer().has(new NamespacedKey(rosePlugin, NO_AI_METADATA_NAME), PersistentDataType.INTEGER);
+        return entity.getPersistentDataContainer().has(new NamespacedKey(rosePlugin, NO_AI_METADATA_NAME),
+                PersistentDataType.INTEGER);
     }
 
-    public static void tagSpawnedFromSpawner(LivingEntity entity) {
+    public static void tagSpawnedFromSpawner(Entity entity) {
         RosePlugin rosePlugin = RoseStacker.getInstance();
-        entity.getPersistentDataContainer().set(new NamespacedKey(rosePlugin, SPAWNED_FROM_SPAWNER_METADATA_NAME), PersistentDataType.INTEGER, 1);
+        entity.getPersistentDataContainer().set(new NamespacedKey(rosePlugin, SPAWNED_FROM_SPAWNER_METADATA_NAME),
+                PersistentDataType.INTEGER, 1);
     }
 
     /**
      * Checks if an entity was spawned from one of our spawners
      *
      * @param entity The entity to check
-     * @return true if the entity was spawned from one of our spawners, otherwise false
+     * @return true if the entity was spawned from one of our spawners, otherwise
+     *         false
      */
-    public static boolean isSpawnedFromSpawner(LivingEntity entity) {
+    public static boolean isSpawnedFromSpawner(Entity entity) {
+        if(entity==null) return false;
         RosePlugin rosePlugin = RoseStacker.getInstance();
-        return entity.getPersistentDataContainer().has(new NamespacedKey(rosePlugin, SPAWNED_FROM_SPAWNER_METADATA_NAME), PersistentDataType.INTEGER);
+        return entity.getPersistentDataContainer()
+                .has(new NamespacedKey(rosePlugin, SPAWNED_FROM_SPAWNER_METADATA_NAME), PersistentDataType.INTEGER);
     }
 
     public static void increaseSpawnCount(StackedSpawnerTile spawner, long amount) {

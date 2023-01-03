@@ -435,7 +435,7 @@ public final class RoseStackerAPI {
      * @return The EntityStackSettings for the entity
      */
     @NotNull
-    public EntityStackSettings getEntityStackSettings(@NotNull LivingEntity entity) {
+    public EntityStackSettings getEntityStackSettings(@NotNull org.bukkit.entity.Entity entity) {
         Objects.requireNonNull(entity);
 
         return this.getEntityStackSettings(entity.getType());

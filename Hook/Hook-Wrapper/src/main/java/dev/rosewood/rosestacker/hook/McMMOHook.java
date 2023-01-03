@@ -9,6 +9,6 @@ public interface McMMOHook {
      *
      * @param entity The LivingEntity to flag
      */
-    void flagSpawnerMetadata(LivingEntity entity);
+    void flagSpawnerMetadata(org.bukkit.entity.Entity entity);
 
 }

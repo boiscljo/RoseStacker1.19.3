@@ -28,10 +28,10 @@ public interface NMSHandler {
      *
      * @param livingEntity to serialize
      * @return base64 string of the entity
-     * @deprecated To be changed to transformEntityType(LivingEntity, EntityType)
+     * @deprecated To be changed to transformEntityType(Entity, EntityType)
      */
     @Deprecated(forRemoval = true)
-    StackedEntityDataEntry<?> getEntityAsNBT(LivingEntity livingEntity);
+    StackedEntityDataEntry<?> getEntityAsNBT(Entity livingEntity);
 
     /**
      * Deserializes and optionally forcefully spawns the entity at the given location
@@ -43,18 +43,18 @@ public interface NMSHandler {
      * @return the entity spawned from the NBT
      */
     @Deprecated(forRemoval = true)
-    LivingEntity createEntityFromNBT(StackedEntityDataEntry<?> serialized, Location location, boolean addToWorld, EntityType entityType);
+    org.bukkit.entity.Entity createEntityFromNBT(StackedEntityDataEntry<?> serialized, Location location, boolean addToWorld, EntityType entityType);
 
     /**
      * Creates a LivingEntity instance where the actual entity has not been added to the world.
-     * To be used in conjunction with {@link #spawnExistingEntity(LivingEntity, SpawnReason, boolean)}
+     * To be used in conjunction with {@link #spawnExistingEntity(Entity, SpawnReason, boolean)}
      *
      * @param entityType The type of the entity to spawn
      * @param location The location the entity would have spawned at
      * @param spawnReason The reason the entity would have been spawned
      * @return The newly created LivingEntity instance
      */
-    LivingEntity createNewEntityUnspawned(EntityType entityType, Location location, SpawnReason spawnReason);
+    org.bukkit.entity.Entity createNewEntityUnspawned(EntityType entityType, Location location, SpawnReason spawnReason);
 
     /**
      * Adds an unspawned entity to the world.
@@ -64,7 +64,7 @@ public interface NMSHandler {
      * @param spawnReason The reason the entity is spawning
      * @param bypassSpawnEvent Should an EntitySpawnEvent be called for this entity?
      */
-    void spawnExistingEntity(LivingEntity entity, SpawnReason spawnReason, boolean bypassSpawnEvent);
+    void spawnExistingEntity(Entity entity, SpawnReason spawnReason, boolean bypassSpawnEvent);
 
     /**
      * Spawns an entity with a certain SpawnReason
@@ -72,8 +72,8 @@ public interface NMSHandler {
      * @param entityType The type of entity to spawn
      * @param spawnReason The reason the entity is spawning
      */
-    default LivingEntity spawnEntityWithReason(EntityType entityType, Location location, SpawnReason spawnReason, boolean bypassSpawnEvent) {
-        LivingEntity entity = this.createNewEntityUnspawned(entityType, location, spawnReason);
+    default org.bukkit.entity.Entity spawnEntityWithReason(EntityType entityType, Location location, SpawnReason spawnReason, boolean bypassSpawnEvent) {
+        org.bukkit.entity.Entity entity = this.createNewEntityUnspawned(entityType, location, spawnReason);
         this.spawnExistingEntity(entity, spawnReason, bypassSpawnEvent);
         return entity;
     }
@@ -117,7 +117,7 @@ public interface NMSHandler {
      *
      * @param livingEntity The entity to remove goals and movement from
      */
-    void removeEntityGoals(LivingEntity livingEntity);
+    void removeEntityGoals(Entity livingEntity);
 
     /**
      * Sets a String value into an ItemStack's NBT
@@ -163,7 +163,7 @@ public interface NMSHandler {
      * @param livingEntity The LivingEntity
      * @param player The Player
      */
-    void setLastHurtBy(LivingEntity livingEntity, Player player);
+    void setLastHurtBy(Entity livingEntity, Player player);
 
     /**
      * Checks if a LivingEntity can see a specific Location point
@@ -172,7 +172,7 @@ public interface NMSHandler {
      * @param location The Location point
      * @return true if the LivingEntity can see the Location point, false otherwise
      */
-    boolean hasLineOfSight(LivingEntity entity1, Location location);
+    boolean hasLineOfSight(Entity entity1, Location location);
 
     /**
      * Checks if a LivingEntity can see a specific Entity
@@ -181,10 +181,10 @@ public interface NMSHandler {
      * @param entity2 The Entity
      * @return true if the LivingEntity can see the Entity, false otherwise
      */
-    default boolean hasLineOfSight(LivingEntity entity1, Entity entity2) {
+    default boolean hasLineOfSight(Entity entity1, Entity entity2) {
         Location location;
-        if (entity2 instanceof LivingEntity) {
-            location = ((LivingEntity) entity2).getEyeLocation();
+        if (entity2 instanceof LivingEntity living) {
+            location = living.getEyeLocation();
         } else {
             location = entity2.getLocation().add(0, entity2.getHeight() * 0.85, 0);
         }
@@ -198,7 +198,7 @@ public interface NMSHandler {
      * @param storageType The type of storage to create
      * @return a new StackedEntityDataStorage instance
      */
-    StackedEntityDataStorage createEntityDataStorage(LivingEntity livingEntity, StackedEntityDataStorageType storageType);
+    StackedEntityDataStorage createEntityDataStorage(Entity livingEntity, StackedEntityDataStorageType storageType);
 
     /**
      * Creates a new StackedEntityDataStorage instance from existing serialized data
@@ -208,7 +208,7 @@ public interface NMSHandler {
      * @param storageType The type of storage to deserialize
      * @return a new StackedEntityDataStorage instance
      */
-    StackedEntityDataStorage deserializeEntityDataStorage(LivingEntity livingEntity, byte[] data, StackedEntityDataStorageType storageType);
+    StackedEntityDataStorage deserializeEntityDataStorage(Entity livingEntity, byte[] data, StackedEntityDataStorageType storageType);
 
     /**
      * Injects the custom stacked spawner logic into the tile entity of the given spawner
