@@ -27,6 +27,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
@@ -69,6 +71,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.craftbukkit.v1_18_R2.CraftServer;
 import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftAbstractVillager;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftCreeper;
@@ -86,59 +89,77 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Turtle;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.ItemStack;
 import sun.misc.Unsafe;
+import java.util.Map.Entry;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 
 @SuppressWarnings("unchecked")
 public class NMSHandlerImpl implements NMSHandler {
 
-    private static EntityDataAccessor<Boolean> value_Creeper_DATA_IS_IGNITED; // DataWatcherObject that determines if a creeper is ignited, normally private
+    private static EntityDataAccessor<Boolean> value_Creeper_DATA_IS_IGNITED; // DataWatcherObject that determines if a
+                                                                              // creeper is ignited, normally private
 
-    private static Field field_GoalSelector_availableGoals; // Field to get the available pathing goals of a mob, normally private
+    private static Field field_GoalSelector_availableGoals; // Field to get the available pathing goals of a mob,
+                                                            // normally private
     private static Field field_Mob_lookControl; // Field to get the look controller of a mob, normally protected
     private static Field field_Mob_moveControl; // Field to get the move controller of a mob, normally protected
     private static Field field_Mob_jumpControl; // Field to get the jump controller of a mob, normally protected
     private static Field field_LivingEntity_brain; // Field to get the brain of a living entity, normally protected
 
-    private static Field field_ServerLevel_entityManager; // Field to get the persistent entity section manager, normally private
+    private static Field field_ServerLevel_entityManager; // Field to get the persistent entity section manager,
+                                                          // normally private
 
-    private static Field field_Entity_spawnReason; // Spawn reason field (only on Paper servers, will be null for Spigot)
+    private static Field field_Entity_spawnReason; // Spawn reason field (only on Paper servers, will be null for
+                                                   // Spigot)
     private static AtomicInteger entityCounter; // Atomic integer to generate unique entity IDs, normally private
 
     private static Unsafe unsafe;
-    private static long field_SpawnerBlockEntity_spawner_offset; // Field offset for modifying SpawnerBlockEntity's spawner field
+    private static long field_SpawnerBlockEntity_spawner_offset; // Field offset for modifying SpawnerBlockEntity's
+                                                                 // spawner field
 
-    private static Field field_AbstractVillager_offers; // Field to get the offers of an AbstractVillager, normally private
+    private static Field field_AbstractVillager_offers; // Field to get the offers of an AbstractVillager, normally
+                                                        // private
 
     static {
         try {
-            Field field_Creeper_DATA_IS_IGNITED = ReflectionUtils.getFieldByPositionAndType(net.minecraft.world.entity.monster.Creeper.class, 2, EntityDataAccessor.class);
+            Field field_Creeper_DATA_IS_IGNITED = ReflectionUtils.getFieldByPositionAndType(
+                    net.minecraft.world.entity.monster.Creeper.class, 2, EntityDataAccessor.class);
             value_Creeper_DATA_IS_IGNITED = (EntityDataAccessor<Boolean>) field_Creeper_DATA_IS_IGNITED.get(null);
-            field_GoalSelector_availableGoals = ReflectionUtils.getFieldByPositionAndType(GoalSelector.class, 0, Set.class);
+            field_GoalSelector_availableGoals = ReflectionUtils.getFieldByPositionAndType(GoalSelector.class, 0,
+                    Set.class);
             field_Mob_lookControl = ReflectionUtils.getFieldByPositionAndType(Mob.class, 0, LookControl.class);
             field_Mob_moveControl = ReflectionUtils.getFieldByPositionAndType(Mob.class, 0, MoveControl.class);
             field_Mob_jumpControl = ReflectionUtils.getFieldByPositionAndType(Mob.class, 0, JumpControl.class);
-            field_LivingEntity_brain = ReflectionUtils.getFieldByPositionAndType(net.minecraft.world.entity.LivingEntity.class, 0, Brain.class);
+            field_LivingEntity_brain = ReflectionUtils
+                    .getFieldByPositionAndType(net.minecraft.world.entity.LivingEntity.class, 0, Brain.class);
 
-            field_ServerLevel_entityManager = ReflectionUtils.getFieldByPositionAndType(ServerLevel.class, 0, PersistentEntitySectionManager.class);
+            field_ServerLevel_entityManager = ReflectionUtils.getFieldByPositionAndType(ServerLevel.class, 0,
+                    PersistentEntitySectionManager.class);
             if (NMSAdapter.isPaper())
-                field_Entity_spawnReason = ReflectionUtils.getFieldByPositionAndType(Entity.class, 0, SpawnReason.class);
-            entityCounter = (AtomicInteger) ReflectionUtils.getFieldByPositionAndType(Entity.class, 0, AtomicInteger.class).get(null);
+                field_Entity_spawnReason = ReflectionUtils.getFieldByPositionAndType(Entity.class, 0,
+                        SpawnReason.class);
+            entityCounter = (AtomicInteger) ReflectionUtils
+                    .getFieldByPositionAndType(Entity.class, 0, AtomicInteger.class).get(null);
 
-            Field field_SpawnerBlockEntity_spawner = ReflectionUtils.getFieldByPositionAndType(SpawnerBlockEntity.class, 0, BaseSpawner.class);
+            Field field_SpawnerBlockEntity_spawner = ReflectionUtils.getFieldByPositionAndType(SpawnerBlockEntity.class,
+                    0, BaseSpawner.class);
             Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
             unsafeField.setAccessible(true);
             unsafe = (Unsafe) unsafeField.get(null);
             field_SpawnerBlockEntity_spawner_offset = unsafe.objectFieldOffset(field_SpawnerBlockEntity_spawner);
 
-            field_AbstractVillager_offers = ReflectionUtils.getFieldByPositionAndType(net.minecraft.world.entity.npc.AbstractVillager.class, 0, MerchantOffers.class);
+            field_AbstractVillager_offers = ReflectionUtils.getFieldByPositionAndType(
+                    net.minecraft.world.entity.npc.AbstractVillager.class, 0, MerchantOffers.class);
         } catch (ReflectiveOperationException e) {
             e.printStackTrace();
         }
     }
 
     @Override
-    public StackedEntityDataEntry<CompoundTag> getEntityAsNBT(LivingEntity livingEntity) {
+    public StackedEntityDataEntry<CompoundTag> getEntityAsNBT(org.bukkit.entity.Entity livingEntity) {
         CompoundTag nbt = new CompoundTag();
         net.minecraft.world.entity.LivingEntity nmsEntity = ((CraftLivingEntity) livingEntity).getHandle();
         nmsEntity.save(nbt);
@@ -154,7 +175,8 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public LivingEntity createEntityFromNBT(StackedEntityDataEntry<?> serialized, Location location, boolean addToWorld, EntityType entityType) {
+    public org.bukkit.entity.Entity createEntityFromNBT(StackedEntityDataEntry<?> serialized, Location location,
+            boolean addToWorld, EntityType entityType) {
         try {
             CompoundTag nbt = (CompoundTag) serialized.get();
 
@@ -174,7 +196,9 @@ public class NMSHandlerImpl implements NMSHandler {
             nbt.putUUID("UUID", UUID.randomUUID()); // Reset the UUID to resolve possible duplicates
             nbt.remove("AngryAt"); // Causes issues if this value is parsed async
 
-            Optional<net.minecraft.world.entity.EntityType<?>> optionalEntity = net.minecraft.world.entity.EntityType.byString(entityType.getKey().getKey());
+            Optional<net.minecraft.world.entity.EntityType<?>> optionalEntity = net.minecraft.world.entity.EntityType
+                    .byString(entityType.getKey().getKey());
+
             if (optionalEntity.isPresent()) {
                 ServerLevel world = ((CraftWorld) location.getWorld()).getHandle();
 
@@ -185,8 +209,7 @@ public class NMSHandlerImpl implements NMSHandler {
                         null,
                         null,
                         new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ()),
-                        MobSpawnType.COMMAND
-                );
+                        MobSpawnType.COMMAND);
 
                 if (entity == null)
                     throw new NullPointerException("Unable to create entity from NBT");
@@ -195,12 +218,13 @@ public class NMSHandlerImpl implements NMSHandler {
                 entity.load(nbt);
 
                 if (addToWorld) {
-                    PersistentEntitySectionManager<Entity> entityManager = (PersistentEntitySectionManager<Entity>) field_ServerLevel_entityManager.get(world);
+                    PersistentEntitySectionManager<Entity> entityManager = (PersistentEntitySectionManager<Entity>) field_ServerLevel_entityManager
+                            .get(world);
                     entityManager.addNewEntity(entity);
                     entity.invulnerableTime = 0;
                 }
 
-                return (LivingEntity) entity.getBukkitEntity();
+                return (org.bukkit.entity.Entity) entity.getBukkitEntity();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -209,17 +233,66 @@ public class NMSHandlerImpl implements NMSHandler {
         return null;
     }
 
+    private static String normalizeName(String name) {
+        return name.toUpperCase(java.util.Locale.ENGLISH).replaceAll("(:|\\s)", "_").replaceAll("\\W", "").replace("MINECRAFT_", "");
+    }
+
+    private net.minecraft.world.entity.EntityType<?> findForgeEntity(String name) {
+        try {
+            Object IForgeRegistry = Class.forName("net.minecraftforge.registries.ForgeRegistries").getField("ENTITIES")
+                    .get(null);
+            AtomicReference<net.minecraft.world.entity.EntityType<?>> returnValue = new AtomicReference<>();
+
+            Set<Entry<ResourceKey<net.minecraft.world.entity.EntityType<?>>, net.minecraft.world.entity.EntityType<?>>> collection = (Set<Entry<ResourceKey<net.minecraft.world.entity.EntityType<?>>, net.minecraft.world.entity.EntityType<?>>>) IForgeRegistry
+                    .getClass().getMethod("getEntries").invoke(IForgeRegistry);
+
+            collection.forEach(entity -> {
+                try {
+                    net.minecraft.world.entity.EntityType<?> type_ = (net.minecraft.world.entity.EntityType<?>) entity
+                            .getValue();
+                    ResourceLocation resourceLocation = net.minecraft.world.entity.EntityType.getKey(type_);
+                    // Field f = type_.getClass().getField("f_135776_");
+                    // f.setAccessible(true);
+
+                    // ResourceLocation resourceLocation = (ResourceLocation) f.get(type_);
+                    // ;
+                    assert resourceLocation != null;
+                    if (!resourceLocation.getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE)) {
+                        String normalized = normalizeName(resourceLocation.toString());
+                        if (normalized.equalsIgnoreCase(name))
+                            returnValue.set(type_);
+                    }
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            });
+            return returnValue.get();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    public static abstract class B {
+      
+        public static org.bukkit.entity.EntityType getType() {
+           
+                return org.bukkit.entity.EntityType.PIG;
+        }
+    }
+
     @Override
-    public LivingEntity createNewEntityUnspawned(EntityType entityType, Location location, SpawnReason spawnReason) {
+    public org.bukkit.entity.Entity createNewEntityUnspawned(EntityType entityType, Location location,
+            SpawnReason spawnReason) {
         World world = location.getWorld();
         if (world == null)
             return null;
 
         Class<? extends org.bukkit.entity.Entity> entityClass = entityType.getEntityClass();
-        if (entityClass == null || !LivingEntity.class.isAssignableFrom(entityClass))
+        if (entityClass == null || !org.bukkit.entity.Entity.class.isAssignableFrom(entityClass))
             throw new IllegalArgumentException("EntityType must be of a LivingEntity");
 
-        net.minecraft.world.entity.EntityType<? extends Entity> nmsEntityType = Registry.ENTITY_TYPE.get(CraftNamespacedKey.toMinecraft(entityType.getKey()));
+        net.minecraft.world.entity.EntityType<? extends Entity> nmsEntityType = Registry.ENTITY_TYPE
+                .get(CraftNamespacedKey.toMinecraft(entityType.getKey()));
         Entity nmsEntity = this.createCreature(
                 nmsEntityType,
                 ((CraftWorld) world).getHandle(),
@@ -227,22 +300,73 @@ public class NMSHandlerImpl implements NMSHandler {
                 null,
                 null,
                 new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ()),
-                this.toNmsSpawnReason(spawnReason)
-        );
+                this.toNmsSpawnReason(spawnReason));
+                
+        if (nmsEntity != null && nmsEntity.getBukkitEntity().getType() != entityType) {
+            nmsEntity.discard();
+            try {
+                nmsEntity = null;
+                nmsEntityType = findForgeEntity(entityType.name());
+                if (nmsEntityType != null) {
+                    nmsEntity = this.createCreature(
+                            nmsEntityType,
+                            ((CraftWorld) world).getHandle(),
+                            null,
+                            null,
+                            null,
+                            new BlockPos(location.getBlockX(), location.getBlockY(), location.getBlockZ()),
+                            this.toNmsSpawnReason(spawnReason));
+                }
+                org.bukkit.entity.Entity ety = nmsEntity == null ? null : nmsEntity.getBukkitEntity();
+                if (ety != null) {
+                    Class<?> clz = ety.getClass();
+                    Field entityName = null;
+                    while (clz != null && clz != Object.class) {
+                        try {
+                            entityName = ety.getClass().getDeclaredField("entityName");
+                            entityName.setAccessible(true);
 
-        return nmsEntity == null ? null : (LivingEntity) nmsEntity.getBukkitEntity();
+                            entityName.set(ety, entityType.name());
+                            break;
+                        } catch (NoSuchFieldException e) {
+                            System.out.println(clz.getName() + " has no field entityName");
+                            clz = clz.getSuperclass();
+                        }
+                    }
+                    if (ety.getType() == EntityType.UNKNOWN) {
+                        
+                    }
+                }
+                return ety;
+            } catch (Throwable t) {
+                t.printStackTrace();
+                return null;
+            }
+
+            // return world.spawnEntity(location, entityType, true);
+
+            // return world.spawn(location, entityClass);
+        }
+
+        return nmsEntity == null ? null : nmsEntity.getBukkitEntity();
     }
 
     /**
-     * Duplicate of {@link net.minecraft.world.entity.EntityType#create(ServerLevel, CompoundTag, Component, net.minecraft.world.entity.player.Player, BlockPos, MobSpawnType, boolean, boolean)}.
-     * Contains a patch to prevent chicken jockeys from spawning and to not play the mob sound upon creation.
+     * Duplicate of
+     * {@link net.minecraft.world.entity.EntityType#create(ServerLevel, CompoundTag, Component, net.minecraft.world.entity.player.Player, BlockPos, MobSpawnType, boolean, boolean)}.
+     * Contains a patch to prevent chicken jockeys from spawning and to not play the
+     * mob sound upon creation.
      */
-    private <T extends Entity> T createCreature(net.minecraft.world.entity.EntityType<T> entityType, ServerLevel world, CompoundTag nbt, Component component, net.minecraft.world.entity.player.Player player, BlockPos blockPos, MobSpawnType mobSpawnType) {
+    private <T extends Entity> T createCreature(net.minecraft.world.entity.EntityType<T> entityType, ServerLevel world,
+            CompoundTag nbt, Component component, net.minecraft.world.entity.player.Player player, BlockPos blockPos,
+            MobSpawnType mobSpawnType) {
         T newEntity;
         if (entityType == net.minecraft.world.entity.EntityType.SPIDER) {
-            newEntity = (T) new SoloEntitySpider((net.minecraft.world.entity.EntityType<? extends Spider>) entityType, world);
+            newEntity = (T) new SoloEntitySpider((net.minecraft.world.entity.EntityType<? extends Spider>) entityType,
+                    world);
         } else if (entityType == net.minecraft.world.entity.EntityType.STRIDER) {
-            newEntity = (T) new SoloEntityStrider((net.minecraft.world.entity.EntityType<? extends Strider>) entityType, world);
+            newEntity = (T) new SoloEntityStrider((net.minecraft.world.entity.EntityType<? extends Strider>) entityType,
+                    world);
         } else {
             newEntity = entityType.create(world);
         }
@@ -253,10 +377,12 @@ public class NMSHandlerImpl implements NMSHandler {
         if (field_Entity_spawnReason != null) {
             try {
                 field_Entity_spawnReason.set(newEntity, this.toBukkitSpawnReason(mobSpawnType));
-            } catch (IllegalAccessException ignored) { }
+            } catch (IllegalAccessException ignored) {
+            }
         }
 
-        newEntity.moveTo(blockPos.getX() + 0.5D, blockPos.getY(), blockPos.getZ() + 0.5D, Mth.wrapDegrees(world.random.nextFloat() * 360.0F), 0.0F);
+        newEntity.moveTo(blockPos.getX() + 0.5D, blockPos.getY(), blockPos.getZ() + 0.5D,
+                Mth.wrapDegrees(world.random.nextFloat() * 360.0F), 0.0F);
         if (newEntity instanceof Mob mob) {
             mob.yHeadRot = mob.getYRot();
             mob.yBodyRot = mob.getYRot();
@@ -271,7 +397,8 @@ public class NMSHandlerImpl implements NMSHandler {
                 groupDataEntity = new Zombie.ZombieGroupData(Zombie.getSpawnAsBabyOdds(world.getRandom()), false);
             }
 
-            mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), mobSpawnType, groupDataEntity, nbt);
+            mob.finalizeSpawn(world, world.getCurrentDifficultyAt(mob.blockPosition()), mobSpawnType, groupDataEntity,
+                    nbt);
         }
 
         if (component != null && newEntity instanceof Mob)
@@ -283,7 +410,8 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void spawnExistingEntity(LivingEntity entity, SpawnReason spawnReason, boolean bypassSpawnEvent) {
+    public void spawnExistingEntity(org.bukkit.entity.Entity entity, SpawnReason spawnReason,
+            boolean bypassSpawnEvent) {
         Location location = entity.getLocation();
         World world = location.getWorld();
         if (world == null)
@@ -297,14 +425,18 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void updateEntityNameTagForPlayer(Player player, org.bukkit.entity.Entity entity, String customName, boolean customNameVisible) {
+    public void updateEntityNameTagForPlayer(Player player, org.bukkit.entity.Entity entity, String customName,
+            boolean customNameVisible) {
         try {
             List<SynchedEntityData.DataItem<?>> dataItems = new ArrayList<>();
             Optional<Component> nameComponent = Optional.ofNullable(CraftChatMessage.fromStringOrNull(customName));
-            dataItems.add(new SynchedEntityData.DataItem<>(EntityDataSerializers.OPTIONAL_COMPONENT.createAccessor(2), nameComponent));
-            dataItems.add(new SynchedEntityData.DataItem<>(EntityDataSerializers.BOOLEAN.createAccessor(3), customNameVisible));
+            dataItems.add(new SynchedEntityData.DataItem<>(EntityDataSerializers.OPTIONAL_COMPONENT.createAccessor(2),
+                    nameComponent));
+            dataItems.add(new SynchedEntityData.DataItem<>(EntityDataSerializers.BOOLEAN.createAccessor(3),
+                    customNameVisible));
 
-            ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(entity.getEntityId(), new SynchedEntityDataWrapper(dataItems), false);
+            ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(entity.getEntityId(),
+                    new SynchedEntityDataWrapper(dataItems), false);
             ((CraftPlayer) player).getHandle().connection.send(entityDataPacket);
         } catch (Exception e) {
             e.printStackTrace();
@@ -312,10 +444,13 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void updateEntityNameTagVisibilityForPlayer(Player player, org.bukkit.entity.Entity entity, boolean customNameVisible) {
+    public void updateEntityNameTagVisibilityForPlayer(Player player, org.bukkit.entity.Entity entity,
+            boolean customNameVisible) {
         try {
-            List<SynchedEntityData.DataItem<?>> dataItems = Lists.newArrayList(new SynchedEntityData.DataItem<>(EntityDataSerializers.BOOLEAN.createAccessor(3), customNameVisible));
-            ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(entity.getEntityId(), new SynchedEntityDataWrapper(dataItems), false);
+            List<SynchedEntityData.DataItem<?>> dataItems = Lists.newArrayList(new SynchedEntityData.DataItem<>(
+                    EntityDataSerializers.BOOLEAN.createAccessor(3), customNameVisible));
+            ClientboundSetEntityDataPacket entityDataPacket = new ClientboundSetEntityDataPacket(entity.getEntityId(),
+                    new SynchedEntityDataWrapper(dataItems), false);
             ((CraftPlayer) player).getHandle().connection.send(entityDataPacket);
         } catch (Exception e) {
             e.printStackTrace();
@@ -337,7 +472,7 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void removeEntityGoals(LivingEntity livingEntity) {
+    public void removeEntityGoals(org.bukkit.entity.Entity livingEntity) {
         net.minecraft.world.entity.LivingEntity nmsEntity = ((CraftLivingEntity) livingEntity).getHandle();
         if (!(nmsEntity instanceof Mob))
             return;
@@ -364,25 +499,38 @@ public class NMSHandlerImpl implements NMSHandler {
 
             // Remove controllers
             field_Mob_lookControl.set(mob, new LookControl(mob) {
-                public void tick() { }
+                public void tick() {
+                }
             });
             field_Mob_moveControl.set(mob, new MoveControl(mob) {
-                public void tick() { }
+                public void tick() {
+                }
             });
             if (mob instanceof Rabbit) {
                 field_Mob_jumpControl.set(mob, new Rabbit.RabbitJumpControl((Rabbit) mob) {
-                    public void tick() { }
-                    public boolean canJump() { return false; }
-                    public boolean wantJump() { return false; }
+                    public void tick() {
+                    }
+
+                    public boolean canJump() {
+                        return false;
+                    }
+
+                    public boolean wantJump() {
+                        return false;
+                    }
                 });
             } else {
                 field_Mob_jumpControl.set(mob, new JumpControl(mob) {
-                    public void tick() { }
+                    public void tick() {
+                    }
                 });
             }
-            field_LivingEntity_brain.set(mob, new Brain(List.of(), List.of(), ImmutableList.of(), () -> Brain.codec(List.of(), List.of())) {
-                public Optional<?> getMemory(MemoryModuleType var0) { return Optional.empty(); }
-            });
+            field_LivingEntity_brain.set(mob,
+                    new Brain(List.of(), List.of(), ImmutableList.of(), () -> Brain.codec(List.of(), List.of())) {
+                        public Optional<?> getMemory(MemoryModuleType var0) {
+                            return Optional.empty();
+                        }
+                    });
         } catch (ReflectiveOperationException ex) {
             ex.printStackTrace();
         }
@@ -419,27 +567,31 @@ public class NMSHandlerImpl implements NMSHandler {
     }
 
     @Override
-    public void setLastHurtBy(LivingEntity livingEntity, Player player) {
+    public void setLastHurtBy(org.bukkit.entity.Entity livingEntity, Player player) {
         if (player != null)
             ((CraftLivingEntity) livingEntity).getHandle().lastHurtByPlayer = ((CraftPlayer) player).getHandle();
     }
 
     @Override
-    public boolean hasLineOfSight(LivingEntity entity1, Location location) {
+    public boolean hasLineOfSight(org.bukkit.entity.Entity entity1, Location location) {
         net.minecraft.world.entity.LivingEntity nmsEntity1 = ((CraftLivingEntity) entity1).getHandle();
         Vec3 vec3d = new Vec3(nmsEntity1.getX(), nmsEntity1.getEyeY(), nmsEntity1.getZ());
         Vec3 target = new Vec3(location.getX(), location.getY(), location.getZ());
-        return nmsEntity1.level.clip(new ClipContext(vec3d, target, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, nmsEntity1)).getType() == HitResult.Type.MISS;
+        return nmsEntity1.level
+                .clip(new ClipContext(vec3d, target, ClipContext.Block.VISUAL, ClipContext.Fluid.NONE, nmsEntity1))
+                .getType() == HitResult.Type.MISS;
     }
 
-    public StackedEntityDataStorage createEntityDataStorage(LivingEntity livingEntity, StackedEntityDataStorageType storageType) {
+    public StackedEntityDataStorage createEntityDataStorage(org.bukkit.entity.Entity livingEntity,
+            StackedEntityDataStorageType storageType) {
         return switch (storageType) {
             case NBT -> new NBTStackedEntityDataStorage(livingEntity);
             case SIMPLE -> new SimpleStackedEntityDataStorage(livingEntity);
         };
     }
 
-    public StackedEntityDataStorage deserializeEntityDataStorage(LivingEntity livingEntity, byte[] data, StackedEntityDataStorageType storageType) {
+    public StackedEntityDataStorage deserializeEntityDataStorage(org.bukkit.entity.Entity livingEntity, byte[] data,
+            StackedEntityDataStorageType storageType) {
         return switch (storageType) {
             case NBT -> new NBTStackedEntityDataStorage(livingEntity, data);
             case SIMPLE -> new SimpleStackedEntityDataStorage(livingEntity, data);
@@ -456,7 +608,8 @@ public class NMSHandlerImpl implements NMSHandler {
         if (!(blockEntity instanceof SpawnerBlockEntity spawnerBlockEntity))
             return null;
 
-        StackedSpawnerTile stackedSpawnerTile = new StackedSpawnerTileImpl(spawnerBlockEntity.getSpawner(), spawnerBlockEntity, stackedSpawner);
+        StackedSpawnerTile stackedSpawnerTile = new StackedSpawnerTileImpl(spawnerBlockEntity.getSpawner(),
+                spawnerBlockEntity, stackedSpawner);
         unsafe.putObject(spawnerBlockEntity, field_SpawnerBlockEntity_spawner_offset, stackedSpawnerTile);
         return stackedSpawnerTile;
     }
@@ -482,18 +635,23 @@ public class NMSHandlerImpl implements NMSHandler {
         };
     }
 
-    public void saveEntityToTag(LivingEntity livingEntity, CompoundTag compoundTag) {
-        // Async villager "fix", if the trades aren't loaded yet force them to save as empty, they will get loaded later
+    public void saveEntityToTag(org.bukkit.entity.Entity livingEntity, CompoundTag compoundTag) {
+        if (livingEntity == null)
+            return;
+        // Async villager "fix", if the trades aren't loaded yet force them to save as
+        // empty, they will get loaded later
         if (livingEntity instanceof AbstractVillager) {
             try {
-                net.minecraft.world.entity.npc.AbstractVillager villager = ((CraftAbstractVillager) livingEntity).getHandle();
+                net.minecraft.world.entity.npc.AbstractVillager villager = ((CraftAbstractVillager) livingEntity)
+                        .getHandle();
 
-                // Set the trades to empty if they are null to prevent trades from generating during the saveWithoutId call
+                // Set the trades to empty if they are null to prevent trades from generating
+                // during the saveWithoutId call
                 boolean bypassTrades = field_AbstractVillager_offers.get(villager) == null;
                 if (bypassTrades)
                     field_AbstractVillager_offers.set(villager, new MerchantOffers());
 
-                ((CraftLivingEntity) livingEntity).getHandle().saveWithoutId(compoundTag);
+                ((CraftEntity) livingEntity).getHandle().saveWithoutId(compoundTag);
 
                 // Restore the offers back to null and make sure nothing is written to the NBT
                 if (bypassTrades) {
@@ -504,7 +662,7 @@ public class NMSHandlerImpl implements NMSHandler {
                 e.printStackTrace();
             }
         } else {
-            ((CraftLivingEntity) livingEntity).getHandle().saveWithoutId(compoundTag);
+            ((CraftEntity) livingEntity).getHandle().saveWithoutId(compoundTag);
         }
     }
 
